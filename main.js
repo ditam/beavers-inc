@@ -2,6 +2,7 @@
 const TILE_SIZE = 128; // tile size in px
 const COL_COUNT = 12;
 const ROW_COUNT = 6;
+const DAM_STRENGTH = 3;
 
 const map = [];
 let container;
@@ -11,10 +12,10 @@ const levelLayouts = [
   [
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
     [0, 0, 0, 0, 2, 2, 2, 2, 0, 0, 0, 2],
-    [0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 0, 0],
-    [1, 1, 1, 1, 1, 0, 0, 2, 0, 0, 0, 0],
-    [0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    [0, 0, 0, 0, 3, 0, 0, 2, 2, 2, 0, 0],
+    [1, 1, 1, 1, 1, 3, 0, 2, 0, 0, 0, 0],
+    [0, 1, 1, 3, 3, 0, 0, 0, 0, 0, 0, 0],
+    [1, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0]
   ]
 ];
 
@@ -22,7 +23,35 @@ const levelLayouts = [
 // It is used both as a type checking aid,
 // as well as an index->type mapping for the level layouts,
 // so its order is also important.
-const tileTypes = ['grass', 'water', 'swamp'];
+const tileTypes = ['grass', 'water', 'swamp', 'dam'];
+
+// TODO: forEachTileInMap util?
+function updateTileCounters() {
+  for (let ri = 0; ri < map.length; ri++) {
+    const row = map[ri];
+    for (let ci = 0; ci < row.length; ci++) {
+      const cell = row[ci];
+      console.assert(tileTypes.includes(cell.type));
+      if (cell.type === 'dam') {
+        console.log('annotating dam:', cell);
+        if (!cell.counterNode) {
+          const counter = $('<div />').addClass('round-counter');
+          counter.appendTo(container);
+          cell.counterNode = counter;
+          cell.counterNode.css({
+            top: cell.domNode.position().top,
+            left: cell.domNode.position().left,
+            width: TILE_SIZE,
+            height: TILE_SIZE,
+            'font-size': TILE_SIZE/2 + 'px',
+            'line-height': TILE_SIZE + 'px'
+          });
+        }
+        cell.counterNode.text(cell.strength);
+      }
+    }
+  }
+}
 
 function getNeighbours(i, j) {
   // we also support passing a tile object
@@ -61,6 +90,16 @@ function floodTile(tile) {
   tile.domNode.addClass('water');
 }
 
+function removeDam(tile) {
+  delete tile.strength;
+  tile.counterNode.remove();
+  delete tile.counterNode;
+  // TODO: add support for replacing covered tile
+  tile.type = 'grass';
+  tile.domNode.removeClass(tileTypes);
+  tile.domNode.addClass('grass');
+}
+
 function floodNeighbours(i, j) {
   // floods the neighbouring tiles, considers dams and applies decay
   for (const tile of getNeighbours(i, j)) {
@@ -70,11 +109,17 @@ function floodNeighbours(i, j) {
     if (tile.type === 'swamp') {
       floodSwamp(i, j);
     }
+    if (tile.type === 'dam') {
+      tile.strength -= 1;
+      if (tile.strength === 0) {
+        removeDam(tile);
+      }
+    }
   }
 }
 
 function floodSwamp(i, j) {
-  // floods every cell in a contigous swamp region at i, j
+  // floods every cell in a contigous swamp region neighbouring i, j
   console.assert(!map[i][j].explored);
   const swamp = [map[i][j]];
   function hasUnexplored(swamp) {
@@ -133,6 +178,8 @@ function endTurn() {
 
   updateMap();
   // TODO: apply worker effects and remove workers
+
+  updateTileCounters();
 }
 
 function init() {
@@ -140,11 +187,15 @@ function init() {
     const row = [];
     for (let j=0; j<COL_COUNT; j++) {
       const tileCode = levelLayouts[currentLevel][i][j];
-      row.push({
+      const tile = {
         i: i,
         j: j,
         type: tileTypes[tileCode]
-      });
+      };
+      if (tile.type === 'dam') {
+        tile.strength = DAM_STRENGTH;
+      }
+      row.push(tile);
     }
     map.push(row);
   }
@@ -169,6 +220,8 @@ function init() {
     }
     rowDiv.appendTo(container);
   }
+
+  updateTileCounters();
 }
 
 $(document).ready(function() {
