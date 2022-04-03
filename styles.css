@@ -73,4 +73,9 @@ body {
   position: absolute;
   text-align: center;
   color: white;
+  font-family: 'Press Start 2P', monospace;
+}
+
+.round-counter.failing {
+  color: red;
 }

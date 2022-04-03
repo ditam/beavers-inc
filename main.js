@@ -2,7 +2,7 @@
 const TILE_SIZE = 128; // tile size in px
 const COL_COUNT = 12;
 const ROW_COUNT = 6;
-const DAM_STRENGTH = 3;
+const DAM_STRENGTH = 4;
 
 const map = [];
 let container;
@@ -43,8 +43,8 @@ function updateTileCounters() {
             left: cell.domNode.position().left,
             width: TILE_SIZE,
             height: TILE_SIZE,
-            'font-size': TILE_SIZE/2 + 'px',
-            'line-height': TILE_SIZE + 'px'
+            'font-size': TILE_SIZE * 0.4 + 'px',
+            'line-height': TILE_SIZE + 12 + 'px'
           });
         }
         cell.counterNode.text(cell.strength);
@@ -100,6 +100,17 @@ function removeDam(tile) {
   tile.domNode.addClass('grass');
 }
 
+function countWaterNeighbours(tile) {
+  const neighbours = getNeighbours(tile);
+  let count = 0;
+  neighbours.forEach(n => {
+    if (n.type === 'water') {
+      count++;
+    }
+  });
+  return count;
+}
+
 function floodNeighbours(i, j) {
   // floods the neighbouring tiles, considers dams and applies decay
   for (const tile of getNeighbours(i, j)) {
@@ -111,6 +122,9 @@ function floodNeighbours(i, j) {
     }
     if (tile.type === 'dam') {
       tile.strength -= 1;
+      if (tile.strength <= countWaterNeighbours(tile)) {
+        tile.counterNode.addClass('failing');
+      }
       if (tile.strength === 0) {
         removeDam(tile);
       }
