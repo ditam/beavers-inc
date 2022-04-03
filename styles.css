@@ -60,3 +60,7 @@ body {
 .tile.water {
   background-image: url('assets/water.png');
 }
+
+.tile.swamp {
+  background-image: url('assets/swamp.png');
+}

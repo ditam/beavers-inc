@@ -9,21 +9,28 @@ let container;
 let currentLevel = 0;
 const levelLayouts = [
   [
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+    [0, 0, 0, 0, 2, 2, 2, 2, 0, 0, 0, 2],
+    [0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 0, 0],
+    [1, 1, 1, 1, 1, 0, 0, 2, 0, 0, 0, 0],
     [0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
   ]
 ];
 
-// this var is used both as a type checking tool,
-// as well as an index->type mapping for the level layouts
-// (This means order is important!)
-const tileTypes = ['grass', 'water'];
+// This var lists all the known tile types.
+// It is used both as a type checking aid,
+// as well as an index->type mapping for the level layouts,
+// so its order is also important.
+const tileTypes = ['grass', 'water', 'swamp'];
 
 function getNeighbours(i, j) {
+  // we also support passing a tile object
+  if (typeof i === 'object') {
+    console.assert(i.hasOwnProperty('i') && i.hasOwnProperty('j'));
+    j = i.j;
+    i = i.i;
+  }
   console.assert(i >= 0 && j >= 0);
 
   const neighbours = [];
@@ -47,16 +54,52 @@ function getNeighbours(i, j) {
   return neighbours;
 }
 
+function floodTile(tile) {
+  tile.type = 'water';
+  tile.updated = true;
+  tile.domNode.removeClass(tileTypes);
+  tile.domNode.addClass('water');
+}
+
 function floodNeighbours(i, j) {
   // floods the neighbouring tiles, considers dams and applies decay
   for (const tile of getNeighbours(i, j)) {
     if (tile.type === 'grass') {
-      tile.type = 'water';
-      tile.updated = true;
-      tile.domNode.removeClass(tileTypes);
-      tile.domNode.addClass('water');
+      floodTile(tile);
+    }
+    if (tile.type === 'swamp') {
+      floodSwamp(i, j);
     }
   }
+}
+
+function floodSwamp(i, j) {
+  // floods every cell in a contigous swamp region at i, j
+  console.assert(!map[i][j].explored);
+  const swamp = [map[i][j]];
+  function hasUnexplored(swamp) {
+    return swamp.some(function(tile) {
+      return !tile.explored;
+    });
+  }
+  // TODO: add failsafe iter count to while condition
+  //       - this algorithm should not take more than max(row, col) iterations
+  while(hasUnexplored(swamp)) {
+    swamp.forEach(tile => {
+      getNeighbours(tile).forEach(neighbour => {
+        if (neighbour.type === 'swamp') {
+          swamp.push(neighbour);
+        }
+        tile.explored = true;
+      });
+    });
+  }
+
+  // flood and clear explored markers
+  swamp.forEach(tile => {
+    floodTile(tile);
+    delete tile.explored;
+  });
 }
 
 function updateMap() {
@@ -98,6 +141,8 @@ function init() {
     for (let j=0; j<COL_COUNT; j++) {
       const tileCode = levelLayouts[currentLevel][i][j];
       row.push({
+        i: i,
+        j: j,
         type: tileTypes[tileCode]
       });
     }
