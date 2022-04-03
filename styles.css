@@ -1,0 +1,30 @@
+body {
+  background-color: #eee;
+  user-select: none;
+}
+
+#map-container {
+  margin: 32px;
+  display: inline-block; /* creates fit-to-content effect */
+  background-color: red;
+  border: 3px solid black; /* should match tile border */
+  will-change: transform; /* fixes Chrome subpixel rendering bug */
+}
+
+#map-container .row {
+  display: block;
+  white-space: nowrap;
+}
+
+.tile {
+  background-color: white;
+  display: inline-block;
+  box-sizing: border-box;
+  border: 3px solid black;
+  cursor: pointer;
+}
+
+.tile:hover {
+  opacity: 0.8;
+  border: 3px solid red;
+}
