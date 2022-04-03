@@ -4,9 +4,18 @@ const COL_COUNT = 12;
 const ROW_COUNT = 6;
 const DAM_STRENGTH = 4;
 
+const resources = {
+  workers: 5,
+  wood: 0,
+  time: 12
+};
+
+const placedWorkers = {}; // key is i|j
+
 const map = [];
 let container;
 let endTurnButton;
+let workerCounter, woodCounter, timerCounter;
 
 let currentLevel = 0;
 const levelLayouts = [
@@ -14,9 +23,9 @@ const levelLayouts = [
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
     [0, 4, 4, 0, 2, 2, 2, 2, 0, 0, 0, 2],
     [0, 4, 4, 4, 3, 0, 0, 2, 2, 2, 0, 0],
-    [1, 1, 1, 1, 1, 3, 0, 2, 0, 0, 0, 0],
-    [0, 1, 1, 3, 3, 0, 0, 0, 0, 0, 0, 0],
-    [1, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    [1, 1, 1, 1, 1, 3, 0, 2, 0, 0, 0, 5],
+    [0, 1, 1, 3, 3, 0, 0, 0, 0, 0, 5, 5],
+    [1, 3, 3, 0, 0, 0, 0, 0, 0, 5, 5, 5]
   ]
 ];
 
@@ -24,7 +33,7 @@ const levelLayouts = [
 // It is used both as a type checking aid,
 // as well as an index->type mapping for the level layouts,
 // so its order is also important.
-const tileTypes = ['grass', 'water', 'swamp', 'dam', 'highground'];
+const tileTypes = ['grass', 'water', 'swamp', 'dam', 'highground', 'woods'];
 
 // TODO: forEachTileInMap util?
 function updateTileCounters() {
@@ -52,6 +61,12 @@ function updateTileCounters() {
       }
     }
   }
+}
+
+function updateResources() {
+  workerCounter.text(resources.workers);
+  woodCounter.text(resources.wood);
+  timerCounter.text(resources.time);
 }
 
 function getNeighbours(i, j) {
@@ -84,21 +99,26 @@ function getNeighbours(i, j) {
   return neighbours;
 }
 
-function floodTile(tile) {
-  tile.type = 'water';
-  tile.updated = true;
+function setTileType(tile, type) {
+  // Changes the tile's internal type and its DOM node class to the given type.
+  // Note that you have to manage other side-effects (such as setting flags) manually.
+  console.assert(tileTypes.includes(type));
+  tile.type = type;
   tile.domNode.removeClass(tileTypes);
-  tile.domNode.addClass('water');
+  tile.domNode.addClass(type);
+}
+
+function floodTile(tile) {
+  setTileType(tile, 'water');
+  tile.updated = true;
 }
 
 function removeDam(tile) {
   delete tile.strength;
   tile.counterNode.remove();
   delete tile.counterNode;
-  // TODO: add support for replacing covered tile
-  tile.type = 'grass';
-  tile.domNode.removeClass(tileTypes);
-  tile.domNode.addClass('grass');
+  // TODO: add support for replacing the originally covered tile
+  setTileType(tile, 'grass');
 }
 
 function countWaterNeighbours(tile) {
@@ -188,13 +208,99 @@ function updateMap() {
   }
 }
 
+function removeWorker(tile) {
+  delete tile.hasWorker;
+  tile.workerNode.remove();
+  delete tile.workerNode;
+  resources.workers++;
+  if (tile.type !== 'woods') {
+    resources.wood++;
+  }
+
+  const workerKey = tile.i + '|' + tile.j;
+  console.assert(workerKey in placedWorkers);
+  delete placedWorkers[workerKey];
+}
+
+function placeWorker(tile) {
+  const workerKey = tile.i + '|' + tile.j;
+  console.assert(!(workerKey in placedWorkers));
+  placedWorkers[workerKey] = true;
+
+  resources.workers--;
+  if (tile.type !== 'woods') {
+    resources.wood--;
+  }
+  tile.hasWorker = true;
+  tile.workerNode = $('<div />').addClass('placed-worker');
+  tile.workerNode.css({
+    width: TILE_SIZE,
+    height: TILE_SIZE,
+    top: tile.domNode.position().top,
+    left: tile.domNode.position().left
+  });
+  tile.workerNode.appendTo(container);
+}
+
+function applyWorkerEffects() {
+  for (const key in placedWorkers) {
+    const coords = key.split('|');
+    const tile = map[coords[0]][coords[1]];
+
+    if (tile.type === 'woods') {
+      resources.wood++;
+    } else {
+      resources.wood--;
+      setTileType(tile, 'dam');
+      tile.strength = DAM_STRENGTH;
+    }
+
+    removeWorker(tile);
+    updateResources();
+  };
+}
+
 function endTurn() {
   console.log('ending turn...');
 
   updateMap();
-  // TODO: apply worker effects and remove workers
+  applyWorkerEffects();
+  resources.time--;
+  // TODO: win condition OR remove time resource, replace with objectives?
 
   updateTileCounters();
+  updateResources();
+}
+
+function processTileClick(tile) {
+  if (tile.hasWorker) {
+    removeWorker(tile);
+  } else {
+    // refuse if not enough workers
+    if (resources.workers === 0) {
+      workerCounter.addClass('error');
+      // TODO: SFX
+      // TODO: global timeout var to debounce
+      setTimeout(function() {
+        workerCounter.removeClass('error');
+      }, 600);
+      return;
+    }
+    // refuse if not enough wood
+    if (tile.type !== 'woods' && resources.wood === 0) {
+      woodCounter.addClass('error');
+      // TODO: SFX
+      // TODO: global timeout var to debounce
+      setTimeout(function() {
+        woodCounter.removeClass('error');
+      }, 600);
+      return;
+    }
+    // otherwise we're good
+    placeWorker(tile);
+  }
+
+  updateResources();
 }
 
 function init() {
@@ -227,7 +333,7 @@ function init() {
         height: TILE_SIZE
       });
       cellDiv.on('click', () => {
-        console.log('click:', ri, ci, cell);
+        processTileClick(cell);
       });
       // we add a reference to the dom node
       cell.domNode = cellDiv;
@@ -244,13 +350,22 @@ function init() {
     left: container.outerWidth(true) - endTurnButton.outerWidth(true) - dB
   });
 
+  $('#icons-container').css({
+    width: container.outerWidth(true) - 300
+  });
+
   updateTileCounters();
+  updateResources();
 }
 
 $(document).ready(function() {
   console.log('init');
   container = $('#map-container');
   endTurnButton = $('#end-turn-button');
+
+  workerCounter = $('#icons-container .section.workers .counter');
+  woodCounter = $('#icons-container .section.wood .counter');
+  timerCounter = $('#icons-container .section.timer .counter');
 
   init();
 

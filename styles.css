@@ -5,29 +5,6 @@ body {
   font-family: 'Press Start 2P', monospace;
 }
 
-.button {
-  width: 300px;
-  height: 50px;
-  margin: 20px;
-  padding: 20px;
-  border: 8px solid white;
-
-  font-size: 30px;
-  text-align: center;
-  line-height: 50px;
-
-  cursor: pointer;
-}
-
-.button:hover {
-  background-color: darkslategray;
-}
-
-#end-turn-button {
-  position: absolute;
-  /* left position set from js */
-}
-
 #map-container {
   margin: 32px;
   display: inline-block; /* creates fit-to-content effect */
@@ -75,6 +52,10 @@ body {
   background-image: url('assets/highground.png');
 }
 
+.tile.woods {
+  background-image: url('assets/woods.png');
+}
+
 .round-counter {
   position: absolute;
   text-align: center;
@@ -84,4 +65,84 @@ body {
 
 .round-counter.failing {
   color: red;
+}
+
+.placed-worker {
+  position: absolute;
+  background-image: url('assets/beaver.png');
+  background-size: cover;
+  pointer-events: none; /* allow tile underneath to be hovered and selected */
+}
+
+/*
+/////////////////////////////////////////////////////////
+*/
+
+#toolbar {
+  position: relative;
+}
+
+#icons-container {
+  text-align: center;
+}
+
+#icons-container .section {
+  display: inline-block;
+  width: 250px;
+  margin-top: 25px;
+}
+
+#icons-container .section > div {
+  display: inline-block;
+}
+
+#icons-container .section .icon {
+  width: 64px;
+  height: 64px;
+  background-size: cover;
+}
+
+#icons-container .section .icon.beaver {
+  background-image: url('assets/beaver.png');
+}
+
+#icons-container .section .icon.wood {
+  background-image: url('assets/wood.png');
+}
+
+#icons-container .section .icon.clock {
+  background-image: url('assets/clock.png');
+}
+
+#icons-container .section .counter {
+  font-size: 42px;
+  vertical-align: super;
+}
+
+#icons-container .section .counter.error {
+  color: red;
+}
+
+.button {
+  width: 300px;
+  height: 50px;
+  margin: 0 20px;
+  padding: 20px;
+  border: 8px solid white;
+
+  font-size: 30px;
+  text-align: center;
+  line-height: 50px;
+
+  cursor: pointer;
+}
+
+.button:hover {
+  background-color: darkslategray;
+}
+
+#end-turn-button {
+  position: absolute;
+  top: 0;
+  /* left position set from js */
 }
