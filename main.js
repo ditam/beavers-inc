@@ -6,6 +6,7 @@ const DAM_STRENGTH = 4;
 
 const map = [];
 let container;
+let endTurnButton;
 
 let currentLevel = 0;
 const levelLayouts = [
@@ -235,15 +236,25 @@ function init() {
     rowDiv.appendTo(container);
   }
 
+  // adjust layout according to the rendered map
+  const blWidth = parseInt(endTurnButton.css('borderLeftWidth'), 10);
+  const brWidth = parseInt(endTurnButton.css('borderRightWidth'), 10);
+  const dB = blWidth + brWidth;
+  endTurnButton.css({
+    left: container.outerWidth(true) - endTurnButton.outerWidth(true) - dB
+  });
+
   updateTileCounters();
 }
 
 $(document).ready(function() {
   console.log('init');
   container = $('#map-container');
+  endTurnButton = $('#end-turn-button');
+
   init();
 
-  $('#end-turn-button').on('click', () => {
+  endTurnButton.on('click', () => {
     endTurn();
   });
 });
