@@ -6,12 +6,30 @@ const ROW_COUNT = 6;
 const map = [];
 let container;
 
+let currentLevel = 0;
+const levelLayouts = [
+  [
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+    [0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  ]
+];
+
+const tileCode2Type = {
+  0: 'grass',
+  1: 'water'
+};
+
 function init() {
   for (let i=0; i<ROW_COUNT; i++) {
     const row = [];
     for (let j=0; j<COL_COUNT; j++) {
+      const tileCode = levelLayouts[currentLevel][i][j];
       row.push({
-        type: j%2? 'grass' : 'water'
+        type: tileCode2Type[tileCode]
       });
     }
     map.push(row);

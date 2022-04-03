@@ -6,7 +6,7 @@ body {
 #map-container {
   margin: 32px;
   display: inline-block; /* creates fit-to-content effect */
-  background-color: red;
+  background-color: black;
   border: 3px solid black; /* should match tile border */
   will-change: transform; /* fixes Chrome subpixel rendering bug */
 }
@@ -17,14 +17,23 @@ body {
 }
 
 .tile {
-  background-color: white;
   display: inline-block;
   box-sizing: border-box;
   border: 3px solid black;
   cursor: pointer;
+  /* match this to tile size, cover or fill would jump when the border changes on hover */
+  background-size: 128px;
 }
 
 .tile:hover {
-  opacity: 0.8;
-  border: 3px solid red;
+  border: 10px solid rgb(129, 15, 15);
+  background-position: -7px -7px; /* diff to regular borders */
+}
+
+.tile.grass {
+  background-image: url('assets/grass.png');
+}
+
+.tile.water {
+  background-image: url('assets/water.png');
 }
