@@ -17,14 +17,19 @@ function init() {
     map.push(row);
   }
 
-  for (const row of map) {
+  for (let ri = 0; ri < map.length; ri++) {
+    const row = map[ri];
     const rowDiv = $('<div />').addClass('row');
-    for (const cell of row) {
+    for (let ci = 0; ci < row.length; ci++) {
+      const cell = row[ci];
       console.assert(['grass', 'water'].includes(cell.type));
       const cellDiv = $('<div />').addClass('tile').addClass(cell.type);
       cellDiv.css({
         width: TILE_SIZE,
         height: TILE_SIZE
+      });
+      cellDiv.on('click', () => {
+        console.log('click:', ri, ci, cell);
       });
       cellDiv.appendTo(rowDiv);
     }
