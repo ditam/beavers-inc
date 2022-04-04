@@ -56,6 +56,62 @@ body {
   background-image: url('assets/woods.png');
 }
 
+/* anim lengths should match js FLOOD_ANIM_DURATION */
+.tile.flood-grass {
+  animation: anim_floodGrass 1.3s forwards;
+}
+.tile.flood-swamp {
+  animation: anim_floodSwamp 1.3s forwards;
+}
+.tile.flood-dam {
+  animation: anim_floodDam 1.3s forwards;
+}
+
+@keyframes anim_floodGrass {
+  from {
+    background-image: url('assets/grass.png');
+  }
+
+  50% {
+    background-image: url('assets/water.png');
+    transform: scale(1.1);
+  }
+
+  to {
+    background-image: url('assets/water.png');
+  }
+}
+
+@keyframes anim_floodSwamp {
+  from {
+    background-image: url('assets/swamp.png');
+  }
+
+  50% {
+    background-image: url('assets/water.png');
+    transform: scale(1.1);
+  }
+
+  to {
+    background-image: url('assets/water.png');
+  }
+}
+
+@keyframes anim_floodDam {
+  from {
+    background-image: url('assets/dam.png');
+  }
+
+  50% {
+    background-image: url('assets/grass.png');
+    transform: scale(1.1);
+  }
+
+  to {
+    background-image: url('assets/grass.png');
+  }
+}
+
 .round-counter {
   position: absolute;
   text-align: center;
@@ -75,7 +131,7 @@ body {
 }
 
 /*
-/////////////////////////////////////////////////////////
+/////////////////////  UI toolbar  /////////////////////
 */
 
 #toolbar {
@@ -137,12 +193,33 @@ body {
   cursor: pointer;
 }
 
-.button:hover {
+.button:not(.busy):hover {
   background-color: darkslategray;
+}
+
+.button.busy {
+  cursor: not-allowed;
 }
 
 #end-turn-button {
   position: absolute;
   top: 0;
   /* left position set from js */
+}
+
+#end-turn-button .busy-icon {
+  width: 64px;
+  height: 64px;
+  background-image: url('assets/waiting.png');
+  background-size: cover;
+  margin: -9px;
+  margin-left: 40%;
+}
+
+#end-turn-button:not(.busy) .busy-icon {
+  display: none;
+}
+
+#end-turn-button.busy .label {
+  display: none;
 }

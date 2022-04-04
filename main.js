@@ -3,6 +3,9 @@ const TILE_SIZE = 128; // tile size in px
 const COL_COUNT = 12;
 const ROW_COUNT = 6;
 const DAM_STRENGTH = 4;
+const FLOOD_ANIM_DURATION = 1300; // should match CSS animation durations
+
+const sounds = {};
 
 const resources = {
   workers: 5,
@@ -21,11 +24,11 @@ let currentLevel = 0;
 const levelLayouts = [
   [
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
-    [0, 4, 4, 0, 2, 2, 2, 2, 0, 0, 0, 2],
+    [0, 4, 4, 0, 2, 2, 2, 2, 0, 0, 1, 2],
     [0, 4, 4, 4, 3, 0, 0, 2, 2, 2, 0, 0],
-    [1, 1, 1, 1, 1, 3, 0, 2, 0, 0, 0, 5],
-    [0, 1, 1, 3, 3, 0, 0, 0, 0, 0, 5, 5],
-    [1, 3, 3, 0, 0, 0, 0, 0, 0, 5, 5, 5]
+    [1, 1, 1, 1, 1, 3, 0, 2, 0, 1, 0, 5],
+    [0, 1, 1, 3, 3, 0, 0, 1, 0, 0, 5, 5],
+    [1, 3, 3, 0, 0, 0, 1, 0, 0, 5, 5, 5]
   ]
 ];
 
@@ -35,6 +38,21 @@ const levelLayouts = [
 // so its order is also important.
 const tileTypes = ['grass', 'water', 'swamp', 'dam', 'highground', 'woods'];
 
+// when true, tile transitions only update the internal state immediately,
+// dom node transitions are deferred - to be updated manually in an animation
+let deferTransitions = false;
+// pendingTransitions has a collection for each diagonal to create a wave effect
+const pendingTransitions = [];
+
+function emptyPendingTransitionGroups() {
+  // truncate to empty const array - hopefully this works everywhere...
+  pendingTransitions.length = 0;
+  for (let i=0; i<ROW_COUNT+COL_COUNT; i++) {
+    pendingTransitions.push([]);
+  }
+}
+emptyPendingTransitionGroups();
+
 // TODO: forEachTileInMap util?
 function updateTileCounters() {
   for (let ri = 0; ri < map.length; ri++) {
@@ -43,7 +61,6 @@ function updateTileCounters() {
       const cell = row[ci];
       console.assert(tileTypes.includes(cell.type));
       if (cell.type === 'dam') {
-        console.log('annotating dam:', cell);
         if (!cell.counterNode) {
           const counter = $('<div />').addClass('round-counter');
           counter.appendTo(container);
@@ -103,12 +120,23 @@ function setTileType(tile, type) {
   // Changes the tile's internal type and its DOM node class to the given type.
   // Note that you have to manage other side-effects (such as setting flags) manually.
   console.assert(tileTypes.includes(type));
+  if (tile.type === type) {
+    console.assert(false, 'invalid transform: ' + type, tile);
+    return;
+  }
+  tile.originalType = tile.type;
   tile.type = type;
-  tile.domNode.removeClass(tileTypes);
-  tile.domNode.addClass(type);
+  if (deferTransitions) {
+    const diagonalIndex = tile.i + tile.j;
+    pendingTransitions[diagonalIndex].push(tile);
+  } else {
+    tile.domNode.removeClass(tileTypes);
+    tile.domNode.addClass(type);
+  }
 }
 
 function floodTile(tile) {
+  console.assert(tile.type !== 'water');
   setTileType(tile, 'water');
   tile.updated = true;
 }
@@ -117,7 +145,7 @@ function removeDam(tile) {
   delete tile.strength;
   tile.counterNode.remove();
   delete tile.counterNode;
-  // TODO: add support for replacing the originally covered tile
+  // TODO: add support for putting back the originally covered tile
   setTileType(tile, 'grass');
 }
 
@@ -139,7 +167,7 @@ function floodNeighbours(i, j) {
       floodTile(tile);
     }
     if (tile.type === 'swamp') {
-      floodSwamp(i, j);
+      floodSwamp(tile);
     }
     if (tile.type === 'dam') {
       tile.strength -= 1;
@@ -153,30 +181,31 @@ function floodNeighbours(i, j) {
   }
 }
 
-function floodSwamp(i, j) {
-  // floods every cell in a contigous swamp region neighbouring i, j
-  console.assert(!map[i][j].explored);
-  const swamp = [map[i][j]];
+function floodSwamp(tile) {
+  // floods every cell in a contigous swamp region starting at tile
+  console.assert(tile.type === 'swamp');
+  console.assert(!tile.explored);
+  const swamp = [tile];
   function hasUnexplored(swamp) {
     return swamp.some(function(tile) {
       return !tile.explored;
     });
   }
   // TODO: add failsafe iter count to while condition
-  //       - this algorithm should not take more than max(row, col) iterations
   while(hasUnexplored(swamp)) {
     swamp.forEach(tile => {
       getNeighbours(tile).forEach(neighbour => {
-        if (neighbour.type === 'swamp') {
+        if (neighbour.type === 'swamp' && !swamp.includes(neighbour)) {
           swamp.push(neighbour);
         }
-        tile.explored = true;
       });
+      tile.explored = true;
     });
   }
 
   // flood and clear explored markers
   swamp.forEach(tile => {
+    console.assert(tile.type === 'swamp', tile);
     floodTile(tile);
     delete tile.explored;
   });
@@ -263,7 +292,10 @@ function applyWorkerEffects() {
 function endTurn() {
   console.log('ending turn...');
 
+  endTurnButton.addClass('busy');
+  deferTransitions = true;
   updateMap();
+  animatePendingTransitions();
   applyWorkerEffects();
   resources.time--;
   // TODO: win condition OR remove time resource, replace with objectives?
@@ -272,14 +304,51 @@ function endTurn() {
   updateResources();
 }
 
+function animatePendingTransitions() {
+  let skippedGroups = 0;
+  const stepDelay = FLOOD_ANIM_DURATION / 3;
+  let timeUntilEnd = 0;
+  console.log('pending:', pendingTransitions);
+  for(const i in pendingTransitions) {
+    const group = pendingTransitions[i];
+    const waveDelay = (i-skippedGroups) * stepDelay;
+    console.log('processing tile group:', group);
+    for(const tile of group) {
+      console.assert(tile.originalType, 'unmarked transformed tile', tile);
+      // NB: tile object is already flooded, we need to extract the previous type
+      let animType = 'flood-' + tile.originalType;
+      setTimeout(function(){
+        sounds.floodTile.currentTime = 0;
+        tile.domNode.addClass(animType);
+        sounds.floodTile.play();
+      }, waveDelay);
+      timeUntilEnd = waveDelay + FLOOD_ANIM_DURATION
+      setTimeout(function(){
+        delete tile.originalType;
+        tile.domNode.removeClass(tileTypes);
+        tile.domNode.addClass(tile.type);
+        tile.domNode.removeClass(animType);
+      }, timeUntilEnd);
+    }
+    if (group.length === 0) {
+      skippedGroups++;
+    }
+  }
+  setTimeout(function() {
+    emptyPendingTransitionGroups();
+    endTurnButton.removeClass('busy');
+  }, timeUntilEnd);
+}
+
 function processTileClick(tile) {
   if (tile.hasWorker) {
     removeWorker(tile);
+    sounds.removeWorker.play();
   } else {
     // refuse if not enough workers
     if (resources.workers === 0) {
       workerCounter.addClass('error');
-      // TODO: SFX
+      sounds.error.play();
       // TODO: global timeout var to debounce
       setTimeout(function() {
         workerCounter.removeClass('error');
@@ -289,7 +358,7 @@ function processTileClick(tile) {
     // refuse if not enough wood
     if (tile.type !== 'woods' && resources.wood === 0) {
       woodCounter.addClass('error');
-      // TODO: SFX
+      sounds.error.play();
       // TODO: global timeout var to debounce
       setTimeout(function() {
         woodCounter.removeClass('error');
@@ -298,6 +367,7 @@ function processTileClick(tile) {
     }
     // otherwise we're good
     placeWorker(tile);
+    sounds.placeWorker.play();
   }
 
   updateResources();
@@ -359,7 +429,15 @@ function init() {
 }
 
 $(document).ready(function() {
-  console.log('init');
+  // init audio assets
+  sounds.floodTile = new Audio('assets/flood_tile.mp3');
+  sounds.buildDam = new Audio('assets/build_dam.mp3');
+  sounds.destroyDam = new Audio('assets/destroy_dam.mp3');
+  sounds.cutWood = new Audio('assets/cut_wood.mp3');
+  sounds.placeWorker = new Audio('assets/place_worker.mp3');
+  sounds.removeWorker = new Audio('assets/remove_worker.mp3');
+  sounds.error = new Audio('assets/error.mp3');
+
   container = $('#map-container');
   endTurnButton = $('#end-turn-button');
 
