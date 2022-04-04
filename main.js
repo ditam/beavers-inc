@@ -1,11 +1,13 @@
 
-const TILE_SIZE = 128; // tile size in px
-const COL_COUNT = 12;
-const ROW_COUNT = 6;
+const TILE_SIZE = 32; // tile size in px
+const COL_COUNT = 32;
+const ROW_COUNT = 16;
 const DAM_STRENGTH = 4;
 const FLOOD_ANIM_DURATION = 1300; // should match CSS animation durations
 const BUILD_DAM_ANIM_DURATION = 1100;
 const CUT_WOOD_ANIM_DURATION = 500;
+
+let isFullscreen = false;
 
 const sounds = {};
 
@@ -486,10 +488,21 @@ function processTileClick(tile) {
 
 function init() {
   // generate map of tiles from level layout
+  let _warnedAboutMapSize = false;
   for (let i=0; i<ROW_COUNT; i++) {
     const row = [];
     for (let j=0; j<COL_COUNT; j++) {
-      const tileCode = levelData[currentLevel].map[i][j];
+      let tileCode;
+      if (levelData[currentLevel].map[i] && j < levelData[currentLevel].map[i].length) {
+        tileCode = levelData[currentLevel].map[i][j];
+      } else {
+        if (!_warnedAboutMapSize) {
+          console.warn('Level map size does not match ROW and COL_COUNT', ROW_COUNT, COL_COUNT);
+          _warnedAboutMapSize = true;
+        }
+        // TODO: this could be an avenue into support for partial maps with offsets...
+        tileCode = 1;
+      }
       const tile = {
         i: i,
         j: j,
@@ -513,7 +526,9 @@ function init() {
       const cellDiv = $('<div />').addClass('tile').addClass(cell.type);
       cellDiv.css({
         width: TILE_SIZE,
-        height: TILE_SIZE
+        height: TILE_SIZE,
+        // we can't just use cover or contain because of the hover border effect
+        'background-size': TILE_SIZE + 'px'
       });
       cellDiv.on('click', () => {
         processTileClick(cell);
@@ -526,9 +541,7 @@ function init() {
   }
 
   // generate objective markers
-  console.log('Level objectives:');
   for (const objective of levelData[currentLevel].objectives) {
-    console.log(objective);
     const objectiveTile = map[objective.y][objective.x];
     console.assert(objectiveTile.type !== 'water', 'Invalid objective');
     const objectiveNode = $('<div />').addClass('objective-marker');
@@ -545,13 +558,13 @@ function init() {
   // adjust layout according to the rendered map
   const blWidth = parseInt(endTurnButton.css('borderLeftWidth'), 10);
   const brWidth = parseInt(endTurnButton.css('borderRightWidth'), 10);
-  const dB = blWidth + brWidth;
+  const dB = blWidth + brWidth + 32; // 32 left-padding
   endTurnButton.css({
     left: container.outerWidth(true) - endTurnButton.outerWidth(true) - dB
   });
 
   $('#icons-container').css({
-    width: container.outerWidth(true) - 300
+    width: container.outerWidth(true) - 432 - 64 // end turn and fullscr buttons
   });
 
   updateTileCounters();
@@ -577,6 +590,36 @@ $(document).ready(function() {
   timerCounter = $('#icons-container .section.timer .counter');
 
   init();
+
+  const fullScrToggle = $('#fullscreen-toggle');
+  fullScrToggle.on('click', function() {
+    isFullscreen = !isFullscreen;
+    console.log('Toggling fullscreen ', isFullscreen);
+    fullScrToggle.toggleClass('on', isFullscreen);
+    fullScrToggle.toggleClass('off', !isFullscreen);
+
+    if (isFullscreen) {
+      const vw = $(window).width();
+      const vh = $(window).height();
+      const containerMargin = 32;
+      const toolbarHeight = 106;
+      const mapWidth = TILE_SIZE * COL_COUNT + 2 * containerMargin;
+      const mapHeight = TILE_SIZE * ROW_COUNT + 2 * containerMargin + toolbarHeight;
+
+      const widthRatio = vw / mapWidth;
+      const heightRatio = vh / mapHeight;
+      const scale = Math.min(widthRatio, heightRatio);
+      $('body').css({
+        transform: 'scale(' + scale + ')',
+        overflow: 'hidden' // scrollbars mess with the calculation, and we mean to be fullscr anyway
+      });
+    } else {
+      $('body').css({
+        transform: 'none',
+        overflow: 'auto'
+      });
+    }
+  });
 
   endTurnButton.on('click', () => {
     if (endTurnButton.hasClass('busy')) {

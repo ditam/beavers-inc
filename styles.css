@@ -3,10 +3,11 @@ body {
   user-select: none;
   color: white;
   font-family: 'Press Start 2P', monospace;
+  transform-origin: 0 0;
 }
 
 #map-container {
-  margin: 32px;
+  margin: 32px; /* see JS containerMargin */
   display: inline-block; /* creates fit-to-content effect */
   background-color: black;
   /* border: 3px solid black; /* should match tile border */
@@ -21,15 +22,14 @@ body {
 .tile {
   display: inline-block;
   box-sizing: border-box;
-  border: 3px solid black;
+  border: 1px solid black;
   cursor: pointer;
-  /* match this to tile size, cover or fill would jump when the border changes on hover */
-  background-size: 128px;
 }
 
 .tile:hover {
-  border: 10px solid rgb(129, 15, 15);
-  background-position: -7px -7px; /* diff to regular borders */
+  /* ideally this border should be sized dynamically from js */
+  border: 3px solid rgb(129, 15, 15);
+  background-position: -2px -2px; /* diff to regular borders */
 }
 
 .tile.grass {
@@ -147,16 +147,37 @@ body {
 
 #toolbar {
   position: relative;
+  margin-left: 32px;
+}
+
+#fullscreen-toggle {
+  display: inline-block;
+  width: 64px;
+  height: 64px;
+  background-size: cover;
+  cursor: pointer;
+}
+
+#fullscreen-toggle:hover {
+  background-color: darkslategray;
+}
+
+#fullscreen-toggle.off {
+  background-image: url('assets/fullscreen-on.png');
+}
+
+#fullscreen-toggle.on {
+  background-image: url('assets/fullscreen-off.png');
 }
 
 #icons-container {
+  display: inline-block;
   text-align: center;
 }
 
 #icons-container .section {
   display: inline-block;
-  width: 250px;
-  margin-top: 25px;
+  margin: 25px;
 }
 
 #icons-container .section > div {
