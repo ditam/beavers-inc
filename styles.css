@@ -74,6 +74,10 @@ body {
   pointer-events: none;
 }
 
+.objective-marker.failed {
+  background-image: url('assets/objective-marker-failed.png');
+}
+
 /* anim lengths should match js FLOOD_ANIM_DURATION */
 .tile.flood-grass {
   animation: anim_floodGrass 1.3s forwards;

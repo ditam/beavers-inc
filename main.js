@@ -128,7 +128,8 @@ function updateTileCounters() {
         if (cell.type === 'dam') {
           cell.counterNode.text(cell.strength);
         } else {
-          cell.counterNode.text(resources.time);
+          // it is redundant to display the timer here while we have the time resource
+          // cell.counterNode.text(resources.time);
         }
       }
     }
@@ -197,6 +198,7 @@ function floodTile(tile) {
     const gameOverDialog = $('<div />').addClass('dialog').appendTo(container);
     gameOverDialog.text('Game over!');
     sounds.gameOver.play();
+    tile.objectiveNode.addClass('failed');
   }
 
   setTileType(tile, 'water');
