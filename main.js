@@ -89,16 +89,16 @@ const levelData = [
     map: [
       [0, 0, 0, 0, 0],
       [1, 1, 1, 0, 0],
-      [0, 0, 0, 0, 0],
+      [0, 2, 4, 5, 0],
       [0, 0, 0, 0, 0]
     ],
     objectives: [
-      {x: 3, y: 1}
+      {x: 4, y: 1}
     ],
     resources: {
-      workers: 3,
-      wood: 3,
-      time: 2
+      workers: 5,
+      wood: 10,
+      time: 10
     }
   }
 ];
@@ -290,8 +290,8 @@ function removeDam(tile) {
   delete tile.strength;
   tile.counterNode.remove();
   delete tile.counterNode;
-  // TODO: add support for putting back the originally covered tile
-  setTileType(tile, 'grass');
+  console.assert(tile.typeBeforeDam);
+  setTileType(tile, tile.typeBeforeDam);
 }
 
 function countNeighboursOfType(tile, type) {
@@ -315,7 +315,8 @@ function floodNeighbours(i, j) {
     if (tile.type === 'swamp') {
       floodSwamp(tile);
     }
-    if (tile.type === 'dam') {
+    // dams on highground never break (not too useful though)
+    if (tile.type === 'dam' && tile.typeBeforeDam !== 'highground') {
       tile.strength -= 1;
       if (tile.strength <= countNeighboursOfType(tile, 'water')) {
         tile.counterNode.addClass('failing');
@@ -438,6 +439,7 @@ function applyWorkerEffects() {
       } else {
         sounds.buildDam.play();
         resources.wood--;
+        tile.typeBeforeDam = tile.type;
         if (tile.type !== 'dam') {
           // NB: we allow repairing dams, and in this case the type is already set
           setTileType(tile, 'dam');
@@ -536,6 +538,7 @@ function animatePendingTransitions() {
       // NB: tile object is already flooded, we need to extract the previous type
       let animType = 'flood-' + tile.originalType;
       if (tile.originalType === 'dam') {
+        animType = 'flood-dam-' + tile.typeBeforeDam;
         groupHadDamCollapse = true;
       }
       setTimeout(function(){

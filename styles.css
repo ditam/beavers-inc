@@ -85,9 +85,23 @@ body {
 .tile.flood-swamp {
   animation: anim_floodSwamp 1.3s forwards;
 }
-.tile.flood-dam {
-  animation: anim_floodDam 1.3s forwards;
+.tile.flood-dam-water {
+  animation: anim_floodDamWater 1.3s forwards;
 }
+.tile.flood-dam-grass {
+  animation: anim_floodDamGrass 1.3s forwards;
+}
+.tile.flood-dam-swamp {
+  animation: anim_floodDamSwamp 1.3s forwards;
+}
+.tile.flood-dam-stillwater {
+  animation: anim_floodDamWater 1.3s forwards;
+}
+/*
+ - dam: not damable
+ - woods: not damable
+ - highground: should never break
+*/
 
 @keyframes anim_floodGrass {
   from {
@@ -119,7 +133,7 @@ body {
   }
 }
 
-@keyframes anim_floodDam {
+@keyframes anim_floodDamGrass {
   from {
     background-image: url('assets/dam.png');
   }
@@ -131,6 +145,36 @@ body {
 
   to {
     background-image: url('assets/grass.png');
+  }
+}
+
+@keyframes anim_floodDamWater {
+  from {
+    background-image: url('assets/dam.png');
+  }
+
+  50% {
+    background-image: url('assets/water.png');
+    transform: scale(1.1);
+  }
+
+  to {
+    background-image: url('assets/water.png');
+  }
+}
+
+@keyframes anim_floodDamSwamp {
+  from {
+    background-image: url('assets/dam.png');
+  }
+
+  50% {
+    background-image: url('assets/swamp.png');
+    transform: scale(1.1);
+  }
+
+  to {
+    background-image: url('assets/swamp.png');
   }
 }
 
@@ -188,7 +232,7 @@ body {
 
 #icons-container .section {
   display: inline-block;
-  margin: 25px;
+  margin: 17px;
 }
 
 #icons-container .section > div {
