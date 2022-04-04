@@ -56,6 +56,10 @@ body {
   background-image: url('assets/woods.png');
 }
 
+.tile.stillwater {
+  background-image: url('assets/stillwater.png');
+}
+
 /* anim lengths should match js FLOOD_ANIM_DURATION */
 .tile.flood-grass {
   animation: anim_floodGrass 1.3s forwards;

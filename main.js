@@ -25,12 +25,12 @@ let workerCounter, woodCounter, timerCounter;
 let currentLevel = 0;
 const levelLayouts = [
   [
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 2],
     [0, 4, 4, 0, 2, 2, 2, 2, 0, 0, 0, 2],
     [0, 4, 4, 4, 3, 0, 0, 2, 2, 2, 0, 0],
     [1, 1, 1, 1, 1, 3, 0, 2, 0, 0, 0, 5],
     [0, 1, 1, 3, 3, 0, 0, 0, 0, 0, 5, 5],
-    [1, 3, 3, 0, 0, 0, 0, 0, 0, 5, 5, 5]
+    [1, 3, 3, 6, 6, 0, 0, 0, 0, 5, 5, 5]
   ]
 ];
 
@@ -38,7 +38,7 @@ const levelLayouts = [
 // It is used both as a type checking aid,
 // as well as an index->type mapping for the level layouts,
 // so its order is also important.
-const tileTypes = ['grass', 'water', 'swamp', 'dam', 'highground', 'woods'];
+const tileTypes = ['grass', 'water', 'swamp', 'dam', 'highground', 'woods', 'stillwater'];
 
 // when true, tile transitions only update the internal state immediately,
 // dom node transitions are deferred - to be updated manually in an animation
@@ -151,11 +151,12 @@ function removeDam(tile) {
   setTileType(tile, 'grass');
 }
 
-function countWaterNeighbours(tile) {
+function countNeighboursOfType(tile, type) {
+  console.assert(tileTypes.includes(type));
   const neighbours = getNeighbours(tile);
   let count = 0;
   neighbours.forEach(n => {
-    if (n.type === 'water') {
+    if (n.type === type) {
       count++;
     }
   });
@@ -173,11 +174,23 @@ function floodNeighbours(i, j) {
     }
     if (tile.type === 'dam') {
       tile.strength -= 1;
-      if (tile.strength <= countWaterNeighbours(tile)) {
+      if (tile.strength <= countNeighboursOfType(tile, 'water')) {
         tile.counterNode.addClass('failing');
       }
       if (tile.strength === 0) {
         removeDam(tile);
+      }
+    }
+    if (tile.type === 'stillwater') {
+      let protected = false;
+      // protected by any dam to the left
+      if (tile.j > 0) {
+        protected = (map[tile.i][tile.j-1].type === 'dam');
+      }
+      // OR any adjacent highground
+      protected = protected || countNeighboursOfType(tile, 'highground') > 0;
+      if (!protected) {
+        floodTile(tile);
       }
     }
   }
@@ -285,6 +298,13 @@ function applyWorkerEffects() {
         if (tile.type !== 'dam') {
           // NB: we allow repairing dams, and in this case the type is already set
           setTileType(tile, 'dam');
+          // dams create stillwater to their right
+          if (tile.j < ROW_COUNT) {
+            const nextTile = map[tile.i][tile.j + 1]
+            if (nextTile.type === 'water') {
+              setTileType(nextTile, 'stillwater');
+            }
+          }
         }
         tile.strength = DAM_STRENGTH;
       }
@@ -490,6 +510,9 @@ $(document).ready(function() {
   init();
 
   endTurnButton.on('click', () => {
+    if (endTurnButton.hasClass('busy')) {
+      return;
+    }
     endTurn();
   });
 });
