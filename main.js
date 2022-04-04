@@ -29,16 +29,9 @@ let currentLevel = 0;
 const levelData = [
   {
     map: [
-      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 2],
-      [0, 4, 4, 0, 2, 2, 2, 2, 0, 0, 0, 2],
-      [0, 4, 4, 4, 3, 0, 0, 2, 2, 2, 0, 0],
-      [1, 1, 1, 1, 1, 3, 0, 2, 0, 0, 0, 5],
-      [0, 1, 1, 3, 3, 0, 0, 0, 0, 0, 5, 5],
-      [1, 3, 3, 6, 6, 0, 0, 0, 0, 5, 5, 5]
+      [0]
     ],
     objectives: [
-      {x: 6, y: 3},
-      {x: 0, y: 2},
     ],
     resources: {
       workers: 5,
@@ -70,6 +63,27 @@ const levelData = [
 const DEBUG = {
   paintMode: false,
   paintIndex: 1,
+  attachPainter: function() {
+    $('.tile').on('mouseenter', function() {
+      const el = $(this);
+      let tile;
+      for (let i=0; i<ROW_COUNT; i++) {
+        for (let j=0; j<COL_COUNT; j++) {
+          if (map[i][j].domNode.is(el)) {
+            tile = map[i][j];
+          }
+        }
+      }
+      const paintType = tileTypes[DEBUG.paintIndex];
+      const _deferred = deferTransitions;
+      deferTransitions = false;
+      setTileType(tile, paintType);
+      deferTransitions = _deferred;
+    });
+  },
+  detachPainter: function() {
+    $('.tile').off('mouseenter');
+  },
   dumpMap: function() {
     const _map = map.map(function(row){ // ha-ha
       return row.map(function(tile) {
