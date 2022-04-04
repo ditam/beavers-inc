@@ -40,6 +40,21 @@ const levelData = [
   }
 ];
 
+const DEBUG = {
+  paintMode: false,
+  paintIndex: 1,
+  dumpMap: function() {
+    const _map = JSON.parse(JSON.stringify(levelData[currentLevel].map));
+    for (const row of map) { // NB: iterating the real map
+      for (const tile of row) {
+        const typeIndex = tileTypes.indexOf(tile.type);
+        _map[tile.i][tile.j] = typeIndex;
+      }
+    }
+    console.log(JSON.stringify(_map))
+  }
+};
+
 // This var lists all the known tile types.
 // It is used both as a type checking aid,
 // as well as an index->type mapping for the level layouts,
@@ -421,6 +436,17 @@ function animatePendingTransitions() {
 }
 
 function processTileClick(tile) {
+  // ======= DEBUG =======
+  if (DEBUG.paintMode) {
+    const paintType = tileTypes[DEBUG.paintIndex];
+    const _deferred = deferTransitions;
+    deferTransitions = false;
+    setTileType(tile, paintType);
+    deferTransitions = _deferred;
+    return;
+  }
+  // ===== end DEBUG =====
+
   if (tile.hasWorker) {
     removeWorker(tile);
     sounds.removeWorker.play();
