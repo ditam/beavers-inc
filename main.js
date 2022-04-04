@@ -444,6 +444,11 @@ function processTileClick(tile) {
       }, 600);
       return;
     }
+    // refuse building on objective tiles
+    if (tile.objectiveNode) {
+      sounds.error.play();
+      return;
+    }
     // otherwise we're good
     placeWorker(tile);
     sounds.placeWorker.play();
