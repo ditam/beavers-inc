@@ -4,6 +4,8 @@ const COL_COUNT = 12;
 const ROW_COUNT = 6;
 const DAM_STRENGTH = 4;
 const FLOOD_ANIM_DURATION = 1300; // should match CSS animation durations
+const BUILD_DAM_ANIM_DURATION = 1100;
+const CUT_WOOD_ANIM_DURATION = 500;
 
 const sounds = {};
 
@@ -24,11 +26,11 @@ let currentLevel = 0;
 const levelLayouts = [
   [
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
-    [0, 4, 4, 0, 2, 2, 2, 2, 0, 0, 1, 2],
+    [0, 4, 4, 0, 2, 2, 2, 2, 0, 0, 0, 2],
     [0, 4, 4, 4, 3, 0, 0, 2, 2, 2, 0, 0],
-    [1, 1, 1, 1, 1, 3, 0, 2, 0, 1, 0, 5],
-    [0, 1, 1, 3, 3, 0, 0, 1, 0, 0, 5, 5],
-    [1, 3, 3, 0, 0, 0, 1, 0, 0, 5, 5, 5]
+    [1, 1, 1, 1, 1, 3, 0, 2, 0, 0, 0, 5],
+    [0, 1, 1, 3, 3, 0, 0, 0, 0, 0, 5, 5],
+    [1, 3, 3, 0, 0, 0, 0, 0, 0, 5, 5, 5]
   ]
 ];
 
@@ -272,39 +274,65 @@ function placeWorker(tile) {
 }
 
 function applyWorkerEffects() {
-  for (const key in placedWorkers) {
-    const coords = key.split('|');
-    const tile = map[coords[0]][coords[1]];
-
-    if (tile.type === 'woods') {
-      resources.wood++;
-    } else {
-      resources.wood--;
-      if (tile.type !== 'dam') {
-        // NB: we allow repairing dams, and in this case the type is already set
-        setTileType(tile, 'dam');
+  return new Promise((resolve, reject) => {
+    function processWorker(tile, queue) {
+      if (tile.type === 'woods') {
+        sounds.cutWood.play();
+        resources.wood++;
+      } else {
+        sounds.buildDam.play();
+        resources.wood--;
+        if (tile.type !== 'dam') {
+          // NB: we allow repairing dams, and in this case the type is already set
+          setTileType(tile, 'dam');
+        }
+        tile.strength = DAM_STRENGTH;
       }
-      tile.strength = DAM_STRENGTH;
+
+      removeWorker(tile);
+      updateResources();
+
+      const duration = (tile.type === 'dam')? BUILD_DAM_ANIM_DURATION : CUT_WOOD_ANIM_DURATION;
+      setTimeout(function() {
+        if (queue.length > 0) {
+          processWorker(queue.shift(), queue);
+        } else {
+          resolve();
+        }
+      }, duration);
     }
 
-    removeWorker(tile);
-    updateResources();
-  };
+    const queue = [];
+    for (const key in placedWorkers) {
+      const coords = key.split('|');
+      const tile = map[coords[0]][coords[1]];
+      queue.push(tile);
+    }
+
+    if (queue.length === 0) {
+      resolve();
+      return;
+    }
+
+    processWorker(queue.shift(), queue);
+  });
 }
 
 function endTurn() {
   console.log('ending turn...');
 
   endTurnButton.addClass('busy');
-  deferTransitions = true;
-  updateMap();
-  animatePendingTransitions();
-  applyWorkerEffects();
-  resources.time--;
-  // TODO: win condition OR remove time resource, replace with objectives?
+  applyWorkerEffects().then(function() {
+    deferTransitions = true;
+    updateMap();
+    animatePendingTransitions();
+    resources.time--;
+    // TODO: win condition OR remove time resource, replace with objectives?
 
-  updateTileCounters();
-  updateResources();
+    updateTileCounters();
+    updateResources();
+    deferTransitions = false;
+  });
 }
 
 function animatePendingTransitions() {
