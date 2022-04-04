@@ -60,6 +60,13 @@ body {
   background-image: url('assets/stillwater.png');
 }
 
+.tile.blank {
+  background-color: transparent;
+}
+.tile.blank:hover {
+  border-color: transparent;
+}
+
 .objective-marker {
   position: absolute;
   background-image: url('assets/objective-marker.png');

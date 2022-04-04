@@ -11,10 +11,11 @@ let isFullscreen = false;
 
 const sounds = {};
 
+// NB: loaded from level data
 const resources = {
-  workers: 5,
-  wood: 2,
-  time: 7
+  workers: 0,
+  wood: 0,
+  time: 0
 };
 
 const placedWorkers = {}; // key is i|j
@@ -38,7 +39,31 @@ const levelData = [
     objectives: [
       {x: 6, y: 3},
       {x: 0, y: 2},
-    ]
+    ],
+    resources: {
+      workers: 5,
+      wood: 2,
+      time: 7
+    }
+  },
+  {
+    map: [
+      [0, 0, 1, 1, 1],
+      [5, 4, 4, 6, 2],
+      [5, 4, 6, 6, 3],
+    ],
+    offsets: {
+      x: 1,
+      y: 5
+    },
+    objectives: [
+      {x: 1, y: 2},
+    ],
+    resources: {
+      workers: 3,
+      wood: 3,
+      time: 9
+    }
   }
 ];
 
@@ -61,7 +86,7 @@ const DEBUG = {
 // It is used both as a type checking aid,
 // as well as an index->type mapping for the level layouts,
 // so its order is also important.
-const tileTypes = ['grass', 'water', 'swamp', 'dam', 'highground', 'woods', 'stillwater'];
+const tileTypes = ['grass', 'water', 'swamp', 'dam', 'highground', 'woods', 'stillwater', 'blank'];
 
 // when true, tile transitions only update the internal state immediately,
 // dom node transitions are deferred - to be updated manually in an animation
@@ -453,6 +478,11 @@ function processTileClick(tile) {
     removeWorker(tile);
     sounds.removeWorker.play();
   } else {
+    // refuse if out of bounds
+    if (tile.type === 'blank') {
+      sounds.error.play();
+      return;
+    }
     // refuse if not enough workers
     if (resources.workers === 0) {
       workerCounter.addClass('error');
@@ -486,22 +516,49 @@ function processTileClick(tile) {
   updateResources();
 }
 
-function init() {
+function loadLevel(index) {
+  // clean up any previous state and DOM
+  map.length = 0;
+  $('.tile').remove();
+  $('.objective-marker').remove();
+  $('.round-counter').remove();
+
+  currentLevel = index;
+
   // generate map of tiles from level layout
   let _warnedAboutMapSize = false;
+  let dX = 0;
+  let dY = 0;
+  if (levelData[currentLevel].offsets) {
+    dX = levelData[currentLevel].offsets.x;
+    dY = levelData[currentLevel].offsets.y;
+  }
+
+  // initiate an empty map
   for (let i=0; i<ROW_COUNT; i++) {
     const row = [];
+    for (let j=0; j<COL_COUNT; j++) {
+      row.push({
+        i: i,
+        j: j,
+        type: 'blank'
+      });
+    }
+    map.push(row);
+  }
+
+  // overide cells according to level data
+  for (let i=0; i<ROW_COUNT; i++) {
     for (let j=0; j<COL_COUNT; j++) {
       let tileCode;
       if (levelData[currentLevel].map[i] && j < levelData[currentLevel].map[i].length) {
         tileCode = levelData[currentLevel].map[i][j];
       } else {
-        if (!_warnedAboutMapSize) {
+        if (!_warnedAboutMapSize && !levelData[currentLevel].offsets) {
           console.warn('Level map size does not match ROW and COL_COUNT', ROW_COUNT, COL_COUNT);
           _warnedAboutMapSize = true;
         }
-        // TODO: this could be an avenue into support for partial maps with offsets...
-        tileCode = 1;
+        tileCode = 7; // 'blank'
       }
       const tile = {
         i: i,
@@ -511,9 +568,13 @@ function init() {
       if (tile.type === 'dam') {
         tile.strength = DAM_STRENGTH;
       }
-      row.push(tile);
+      if (i < levelData[currentLevel].map.length && j < levelData[currentLevel].map[i].length) {
+        // if we're within the specified partial map, apply offsets
+        map[i+dY][j+dX] = tile;
+      } else {
+        // otherwise don't bother updating the default map
+      }
     }
-    map.push(row);
   }
 
   // generate DOM according to map
@@ -542,7 +603,7 @@ function init() {
 
   // generate objective markers
   for (const objective of levelData[currentLevel].objectives) {
-    const objectiveTile = map[objective.y][objective.x];
+    const objectiveTile = map[objective.y + dY][objective.x + dX];
     console.assert(objectiveTile.type !== 'water', 'Invalid objective');
     const objectiveNode = $('<div />').addClass('objective-marker');
     objectiveNode.css({
@@ -567,6 +628,11 @@ function init() {
     width: container.outerWidth(true) - 432 - 64 // end turn and fullscr buttons
   });
 
+  // apply level-specific resources
+  resources.workers = levelData[currentLevel].resources.workers;
+  resources.wood = levelData[currentLevel].resources.wood;
+  resources.time = levelData[currentLevel].resources.time;
+
   updateTileCounters();
   updateResources();
 }
@@ -589,7 +655,7 @@ $(document).ready(function() {
   woodCounter = $('#icons-container .section.wood .counter');
   timerCounter = $('#icons-container .section.timer .counter');
 
-  init();
+  loadLevel(currentLevel);
 
   const fullScrToggle = $('#fullscreen-toggle');
   fullScrToggle.on('click', function() {
