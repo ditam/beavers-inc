@@ -9,7 +9,7 @@ const sounds = {};
 
 const resources = {
   workers: 5,
-  wood: 0,
+  wood: 2,
   time: 12
 };
 
@@ -280,7 +280,10 @@ function applyWorkerEffects() {
       resources.wood++;
     } else {
       resources.wood--;
-      setTileType(tile, 'dam');
+      if (tile.type !== 'dam') {
+        // NB: we allow repairing dams, and in this case the type is already set
+        setTileType(tile, 'dam');
+      }
       tile.strength = DAM_STRENGTH;
     }
 
