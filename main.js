@@ -670,6 +670,7 @@ function loadLevel(index) {
         type: tileTypes[tileCode]
       };
       if (tile.type === 'dam') {
+        tile.typeBeforeDam = 'grass';
         tile.strength = DAM_STRENGTH;
       }
       if (i < levelData[currentLevel].map.length && j < levelData[currentLevel].map[i].length) {
