@@ -26,7 +26,7 @@ let container;
 let endTurnButton;
 let workerCounter, woodCounter, timerCounter;
 
-let currentLevel = 0;
+let currentLevel = 2;
 const levelData = [
   {
     map: [
@@ -83,6 +83,22 @@ const levelData = [
       workers: 3,
       wood: 3,
       time: 9
+    }
+  },
+  {
+    map: [
+      [0, 0, 0, 0, 0],
+      [1, 1, 1, 0, 0],
+      [0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0]
+    ],
+    objectives: [
+      {x: 3, y: 1}
+    ],
+    resources: {
+      workers: 3,
+      wood: 3,
+      time: 2
     }
   }
 ];
@@ -230,9 +246,17 @@ function setTileType(tile, type) {
   }
 }
 
-function showMessage(text) {
+function showMessage(text, css, options) {
   const dialog = $('<div />').addClass('dialog').appendTo(container);
+  if (css) {
+    dialog.css(css);
+  }
   dialog.text(text);
+  if (options) {
+    const extra = $('<div />').addClass('extra').text(options.continueMsg);
+    extra.appendTo(dialog);
+    dialog.on('click', options.onContinue);
+  }
 }
 
 function floodTile(tile) {
@@ -241,7 +265,20 @@ function floodTile(tile) {
   if (tile.objectiveNode) {
     tile.objectiveNode.addClass('failed');
     sounds.gameOver.play();
-    showMessage('Game over!');
+    showMessage(
+      'Game over!',
+      {
+        left: '40%'
+      },
+      {
+        continueMsg: 'Click to retry level.',
+        onContinue: function() {
+          $('.dialog').remove();
+          isGameOver = false;
+          loadLevel(currentLevel);
+        }
+      }
+    );
     isGameOver = true;
   }
 
@@ -463,7 +500,13 @@ function endTurn() {
       if (resources.time === 0) {
         sounds.success.play();
         if (levelData.length === currentLevel + 1) {
-          showMessage('Congratulations, you won! Check back later for more levels.');
+          showMessage(
+            'Congratulations, you won! Check back later for more levels.',
+            {
+              width: '60%',
+              left: '150px'
+            }
+          );
           isGameOver = true;
         } else {
           loadLevel(currentLevel + 1);
