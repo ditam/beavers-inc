@@ -71,13 +71,11 @@ const DEBUG = {
   paintMode: false,
   paintIndex: 1,
   dumpMap: function() {
-    const _map = JSON.parse(JSON.stringify(levelData[currentLevel].map));
-    for (const row of map) { // NB: iterating the real map
-      for (const tile of row) {
-        const typeIndex = tileTypes.indexOf(tile.type);
-        _map[tile.i][tile.j] = typeIndex;
-      }
-    }
+    const _map = map.map(function(row){ // ha-ha
+      return row.map(function(tile) {
+        return tileTypes.indexOf(tile.type);
+      });
+    });
     console.log(JSON.stringify(_map))
   }
 };
