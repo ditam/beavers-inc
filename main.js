@@ -289,6 +289,7 @@ function applyWorkerEffects() {
         tile.strength = DAM_STRENGTH;
       }
 
+      updateTileCounters();
       removeWorker(tile);
       updateResources();
 
