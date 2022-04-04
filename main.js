@@ -8,6 +8,7 @@ const BUILD_DAM_ANIM_DURATION = 1100;
 const CUT_WOOD_ANIM_DURATION = 500;
 
 let isFullscreen = false;
+let isGameOver = false;
 
 const sounds = {};
 
@@ -57,16 +58,26 @@ const levelData = [
   },
   {
     map: [
-      [0, 0, 1, 1, 1],
-      [5, 4, 4, 6, 2],
-      [5, 4, 6, 6, 3],
+      [2,2,2,0,2,2,2,2,4,1,1,1,1,1,1,1,1,1,4,5,5,5,4,4,4,0,2,0,2,2,7,7],
+      [5,2,2,2,0,2,2,2,4,1,1,1,1,1,1,1,1,4,5,5,4,4,4,4,4,0,2,2,2,2,2,7],
+      [2,2,2,5,5,5,2,4,1,1,1,1,1,1,1,1,4,4,4,4,4,5,5,5,2,5,2,0,2,5,2,7],
+      [5,2,2,0,5,5,4,1,1,1,4,1,1,1,1,0,2,2,4,5,2,2,2,2,2,2,0,7,7,2,7,7],
+      [5,2,5,0,0,4,1,1,1,4,4,4,1,1,4,0,0,2,2,2,2,2,0,0,0,2,2,7,7,7,7,7],
+      [2,0,0,0,0,0,1,1,4,4,1,1,1,4,0,0,0,2,2,2,5,2,2,0,0,2,7,7,7,7,7,7],
+      [5,2,5,0,4,1,1,1,1,1,1,1,4,5,0,0,2,2,2,5,2,2,0,0,2,2,2,2,7,7,7,7],
+      [2,2,5,4,1,1,1,1,1,1,1,1,4,0,0,0,0,0,0,0,0,0,0,2,2,2,2,2,7,7,7,7],
+      [2,5,4,1,1,1,1,1,1,1,1,4,5,5,5,0,7,7,7,7,0,0,0,2,5,2,2,7,7,7,7,7],
+      [5,4,1,1,1,1,1,1,1,1,4,5,5,5,0,0,7,7,7,7,7,0,2,2,2,2,2,7,7,7,7,7],
+      [4,4,1,1,1,1,1,1,4,4,0,5,5,5,5,5,5,5,7,7,7,2,2,2,7,7,7,7,7,7,7,7],
+      [1,1,1,1,1,4,4,4,4,4,0,0,5,5,0,5,5,5,5,7,7,2,2,2,7,7,7,7,7,7,7,7],
+      [1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,7,7,5,7,7,7,7,7,7,7,7,7,7,7,7,7,7],
+      [1,1,1,1,4,0,0,0,0,0,0,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7],
+      [1,1,1,4,4,5,5,0,0,0,0,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7],
+      [1,1,4,4,4,5,5,5,0,0,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7]
     ],
-    offsets: {
-      x: 1,
-      y: 5
-    },
     objectives: [
-      {x: 1, y: 2},
+      {x: 4, y: 1},
+      {x: 9, y: 14},
     ],
     resources: {
       workers: 3,
@@ -219,14 +230,19 @@ function setTileType(tile, type) {
   }
 }
 
+function showMessage(text) {
+  const dialog = $('<div />').addClass('dialog').appendTo(container);
+  dialog.text(text);
+}
+
 function floodTile(tile) {
   console.assert(tile.type !== 'water');
 
   if (tile.objectiveNode) {
-    const gameOverDialog = $('<div />').addClass('dialog').appendTo(container);
-    gameOverDialog.text('Game over!');
-    sounds.gameOver.play();
     tile.objectiveNode.addClass('failed');
+    sounds.gameOver.play();
+    showMessage('Game over!');
+    isGameOver = true;
   }
 
   setTileType(tile, 'water');
@@ -436,13 +452,24 @@ function endTurn() {
   applyWorkerEffects().then(function() {
     deferTransitions = true;
     updateMap();
-    animatePendingTransitions();
+    const pendingTransitionsDuration = animatePendingTransitions();
     resources.time--;
-    // TODO: win condition OR remove time resource, replace with objectives?
-
     updateTileCounters();
     updateResources();
     deferTransitions = false;
+
+    // check win conditions
+    setTimeout(function() {
+      if (resources.time === 0) {
+        sounds.success.play();
+        if (levelData.length === currentLevel + 1) {
+          showMessage('Congratulations, you won! Check back later for more levels.');
+          isGameOver = true;
+        } else {
+          loadLevel(currentLevel + 1);
+        }
+      }
+    }, pendingTransitionsDuration);
   });
 }
 
@@ -490,6 +517,7 @@ function animatePendingTransitions() {
     emptyPendingTransitionGroups();
     endTurnButton.removeClass('busy');
   }, timeUntilEnd);
+  return timeUntilEnd;
 }
 
 function processTileClick(tile) {
@@ -508,8 +536,8 @@ function processTileClick(tile) {
     removeWorker(tile);
     sounds.removeWorker.play();
   } else {
-    // refuse if out of bounds
-    if (tile.type === 'blank') {
+    // refuse if out of bounds or game is over
+    if (tile.type === 'blank' || isGameOver) {
       sounds.error.play();
       return;
     }
@@ -675,6 +703,7 @@ $(document).ready(function() {
   sounds.cutWood = new Audio('assets/cut_wood.mp3');
   sounds.placeWorker = new Audio('assets/place_worker.mp3');
   sounds.removeWorker = new Audio('assets/remove_worker.mp3');
+  sounds.success = new Audio('assets/new_level.mp3');
   sounds.gameOver = new Audio('assets/game_over.mp3');
   sounds.error = new Audio('assets/error.mp3');
 
@@ -718,7 +747,7 @@ $(document).ready(function() {
   });
 
   endTurnButton.on('click', () => {
-    if (endTurnButton.hasClass('busy')) {
+    if (endTurnButton.hasClass('busy') || isGameOver) {
       return;
     }
     endTurn();
