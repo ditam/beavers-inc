@@ -340,19 +340,26 @@ function animatePendingTransitions() {
   let skippedGroups = 0;
   const stepDelay = FLOOD_ANIM_DURATION / 3;
   let timeUntilEnd = 0;
-  console.log('pending:', pendingTransitions);
   for(const i in pendingTransitions) {
     const group = pendingTransitions[i];
     const waveDelay = (i-skippedGroups) * stepDelay;
-    console.log('processing tile group:', group);
+    let groupHadDamCollapse = false;
+
+    // keep track of empty groups so that they don't increase the delay
+    if (group.length === 0) {
+      skippedGroups++;
+      continue;
+    }
+
     for(const tile of group) {
       console.assert(tile.originalType, 'unmarked transformed tile', tile);
       // NB: tile object is already flooded, we need to extract the previous type
       let animType = 'flood-' + tile.originalType;
+      if (tile.originalType === 'dam') {
+        groupHadDamCollapse = true;
+      }
       setTimeout(function(){
-        sounds.floodTile.currentTime = 0;
         tile.domNode.addClass(animType);
-        sounds.floodTile.play();
       }, waveDelay);
       timeUntilEnd = waveDelay + FLOOD_ANIM_DURATION
       setTimeout(function(){
@@ -362,9 +369,12 @@ function animatePendingTransitions() {
         tile.domNode.removeClass(animType);
       }, timeUntilEnd);
     }
-    if (group.length === 0) {
-      skippedGroups++;
-    }
+    // this is the same delay as inside the loop, but we only want to play sounds once per group
+    setTimeout(function(){
+      const sfx = groupHadDamCollapse? sounds.destroyDam : sounds.floodTile;
+      sfx.currentTime = 0;
+      sfx.play();
+    }, waveDelay);
   }
   setTimeout(function() {
     emptyPendingTransitionGroups();
