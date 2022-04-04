@@ -154,6 +154,7 @@ function floodTile(tile) {
   if (tile.objectiveNode) {
     const gameOverDialog = $('<div />').addClass('dialog').appendTo(container);
     gameOverDialog.text('Game over!');
+    sounds.gameOver.play();
   }
 
   setTileType(tile, 'water');
@@ -539,6 +540,7 @@ $(document).ready(function() {
   sounds.cutWood = new Audio('assets/cut_wood.mp3');
   sounds.placeWorker = new Audio('assets/place_worker.mp3');
   sounds.removeWorker = new Audio('assets/remove_worker.mp3');
+  sounds.gameOver = new Audio('assets/game_over.mp3');
   sounds.error = new Audio('assets/error.mp3');
 
   container = $('#map-container');
