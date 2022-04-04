@@ -60,6 +60,13 @@ body {
   background-image: url('assets/stillwater.png');
 }
 
+.objective-marker {
+  position: absolute;
+  background-image: url('assets/objective-marker.png');
+  background-size: cover;
+  pointer-events: none;
+}
+
 /* anim lengths should match js FLOOD_ANIM_DURATION */
 .tile.flood-grass {
   animation: anim_floodGrass 1.3s forwards;
@@ -226,4 +233,14 @@ body {
 
 #end-turn-button.busy .label {
   display: none;
+}
+
+.dialog {
+  position: absolute;
+  padding: 50px;
+  top: 40%;
+  left: 40%;
+  background-color: black;
+  z-index: 100;
+  border: 8px solid white;
 }

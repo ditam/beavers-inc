@@ -12,7 +12,7 @@ const sounds = {};
 const resources = {
   workers: 5,
   wood: 2,
-  time: 12
+  time: 7
 };
 
 const placedWorkers = {}; // key is i|j
@@ -23,15 +23,21 @@ let endTurnButton;
 let workerCounter, woodCounter, timerCounter;
 
 let currentLevel = 0;
-const levelLayouts = [
-  [
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 2],
-    [0, 4, 4, 0, 2, 2, 2, 2, 0, 0, 0, 2],
-    [0, 4, 4, 4, 3, 0, 0, 2, 2, 2, 0, 0],
-    [1, 1, 1, 1, 1, 3, 0, 2, 0, 0, 0, 5],
-    [0, 1, 1, 3, 3, 0, 0, 0, 0, 0, 5, 5],
-    [1, 3, 3, 6, 6, 0, 0, 0, 0, 5, 5, 5]
-  ]
+const levelData = [
+  {
+    map: [
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 2],
+      [0, 4, 4, 0, 2, 2, 2, 2, 0, 0, 0, 2],
+      [0, 4, 4, 4, 3, 0, 0, 2, 2, 2, 0, 0],
+      [1, 1, 1, 1, 1, 3, 0, 2, 0, 0, 0, 5],
+      [0, 1, 1, 3, 3, 0, 0, 0, 0, 0, 5, 5],
+      [1, 3, 3, 6, 6, 0, 0, 0, 0, 5, 5, 5]
+    ],
+    objectives: [
+      {x: 6, y: 3},
+      {x: 0, y: 2},
+    ]
+  }
 ];
 
 // This var lists all the known tile types.
@@ -62,7 +68,8 @@ function updateTileCounters() {
     for (let ci = 0; ci < row.length; ci++) {
       const cell = row[ci];
       console.assert(tileTypes.includes(cell.type));
-      if (cell.type === 'dam') {
+      if (cell.type === 'dam' || cell.objectiveNode) {
+        console.assert(!(cell.type === 'dam' && cell.objectiveNode));
         if (!cell.counterNode) {
           const counter = $('<div />').addClass('round-counter');
           counter.appendTo(container);
@@ -76,7 +83,11 @@ function updateTileCounters() {
             'line-height': TILE_SIZE + 12 + 'px'
           });
         }
-        cell.counterNode.text(cell.strength);
+        if (cell.type === 'dam') {
+          cell.counterNode.text(cell.strength);
+        } else {
+          cell.counterNode.text(resources.time);
+        }
       }
     }
   }
@@ -139,6 +150,12 @@ function setTileType(tile, type) {
 
 function floodTile(tile) {
   console.assert(tile.type !== 'water');
+
+  if (tile.objectiveNode) {
+    const gameOverDialog = $('<div />').addClass('dialog').appendTo(container);
+    gameOverDialog.text('Game over!');
+  }
+
   setTileType(tile, 'water');
   tile.updated = true;
 }
@@ -436,10 +453,11 @@ function processTileClick(tile) {
 }
 
 function init() {
+  // generate map of tiles from level layout
   for (let i=0; i<ROW_COUNT; i++) {
     const row = [];
     for (let j=0; j<COL_COUNT; j++) {
-      const tileCode = levelLayouts[currentLevel][i][j];
+      const tileCode = levelData[currentLevel].map[i][j];
       const tile = {
         i: i,
         j: j,
@@ -453,6 +471,7 @@ function init() {
     map.push(row);
   }
 
+  // generate DOM according to map
   for (let ri = 0; ri < map.length; ri++) {
     const row = map[ri];
     const rowDiv = $('<div />').addClass('row');
@@ -472,6 +491,23 @@ function init() {
       cellDiv.appendTo(rowDiv);
     }
     rowDiv.appendTo(container);
+  }
+
+  // generate objective markers
+  console.log('Level objectives:');
+  for (const objective of levelData[currentLevel].objectives) {
+    console.log(objective);
+    const objectiveTile = map[objective.y][objective.x];
+    console.assert(objectiveTile.type !== 'water', 'Invalid objective');
+    const objectiveNode = $('<div />').addClass('objective-marker');
+    objectiveNode.css({
+      width: TILE_SIZE,
+      height: TILE_SIZE,
+      top: objectiveTile.domNode.position().top,
+      left: objectiveTile.domNode.position().left
+    });
+    objectiveNode.appendTo(container);
+    objectiveTile.objectiveNode = objectiveNode;
   }
 
   // adjust layout according to the rendered map
