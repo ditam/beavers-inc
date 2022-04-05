@@ -892,6 +892,47 @@ function loadLevel(index, randomized) {
   updateResources();
 }
 
+function showPlayButton() {
+  // if we want to play music on the splashscreen, we need the user to interact with the site first
+  const playButton = $('<div />').addClass('play-button').text('click to start').appendTo($('body'));
+  playButton.on('click', function() {
+    playButton.remove();
+    sounds.song1.play();
+    showSplashScreen();
+  });
+}
+
+function showSplashScreen() {
+  const splash = $('<div />').addClass('splash-screen').appendTo($('body'));
+
+  // title
+  $('<div />').addClass('header1').text('Beavers').appendTo(splash);
+  $('<div />').addClass('header2').text('Inc.').appendTo(splash);
+
+  // beavers on sides
+  $('<div />').addClass('logo-left').appendTo(splash);
+  $('<div />').addClass('logo-right').appendTo(splash);
+
+  // flashing msg
+  const flasher = $('<div />').addClass('start-message').text('PUSH START BUTTON').appendTo(splash);
+
+  // footer
+  $('<div />').addClass('footer1').text('© MMXXII DITAM').appendTo(splash);
+  $('<div />').addClass('footer2').text('LUDUM DARE L').appendTo(splash);
+
+  let _i = 0;
+  const _interval = setInterval(function() {
+    flasher.css('opacity', _i%2? 0 : 1);
+    _i++;
+  }, 1000);
+
+  splash.on('click', function() {
+    loadLevel(currentLevel);
+    clearInterval(_interval);
+    splash.remove();
+  });
+}
+
 $(document).ready(function() {
   // init audio assets
   sounds.floodTile = new Audio('assets/flood_tile.mp3');
@@ -905,6 +946,8 @@ $(document).ready(function() {
   sounds.gameOver = new Audio('assets/game_over.mp3');
   sounds.error = new Audio('assets/error.mp3');
 
+  sounds.song1 = new Audio('assets/song1.mp3');
+
   container = $('#map-container');
   endTurnButton = $('#end-turn-button');
 
@@ -912,7 +955,7 @@ $(document).ready(function() {
   woodCounter = $('#icons-container .section.wood .counter');
   timerCounter = $('#icons-container .section.timer .counter');
 
-  loadLevel(currentLevel);
+  showPlayButton();
 
   const fullScrToggle = $('#fullscreen-toggle');
   fullScrToggle.on('click', function() {

@@ -335,3 +335,93 @@ body {
   margin-top: 50px;
   color: gray;
 }
+
+/* /////////// Splash Screen //////////// */
+
+.play-button {
+  z-index: 1;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1100px;
+  height: 650px;
+  background-color: black;
+  text-align: center;
+  line-height: 650px;
+  cursor: pointer;
+}
+
+.play-button:hover {
+  color: gray;
+}
+
+.splash-screen {
+  position: absolute;
+  top: 25px;
+  left: 25px;
+  width: 1100px;
+  height: 650px;
+  border: 5px solid white;
+  background-color: black;
+  z-index: 1;
+  cursor: pointer;
+}
+
+.splash-screen .header1 {
+  font-size: 64px;
+  margin-top: 100px;
+  margin-left: 325px;
+  text-shadow: 9px 5px 0px orange;
+  -webkit-text-stroke: 1px gray;
+}
+
+.splash-screen .header2 {
+  font-size: 32px;
+  margin-top: 0px;
+  margin-left: 490px;
+  text-shadow: orange 4px 2px 0px;
+  -webkit-text-stroke: 1px gray;
+}
+
+.splash-screen .logo-left {
+  position: absolute;
+  width: 64px;
+  height: 64px;
+  top: 315px;
+  left: 150px;
+  background-image: url('assets/beaver.png');
+  background-size: contain;
+  transform: scaleX(-1);
+}
+
+.splash-screen .logo-right {
+  position: absolute;
+  width: 64px;
+  height: 64px;
+  top: 315px;
+  left: 900px;
+  background-image: url('assets/beaver_boss.png');
+  background-size: contain;
+}
+
+.splash-screen .start-message {
+  font-size: 32px;
+  margin-top: 140px;
+  margin-bottom: 180px;
+  margin-left: 280px;
+  -webkit-text-stroke: 1px gray;
+}
+
+.splash-screen .footer1 {
+  font-size: 24px;
+  margin-top: 60px;
+  margin-left: 380px;
+  -webkit-text-stroke: 1px gray;
+}
+
+.splash-screen .footer2 {
+  font-size: 24px;
+  margin-top: 20px;
+  margin-left: 410px;
+  -webkit-text-stroke: 1px gray;
+}
