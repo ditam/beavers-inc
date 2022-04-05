@@ -419,13 +419,14 @@ function removeWorker(tile) {
   console.assert(workerKey in placedWorkers);
   //workers are removed during processing, in which case the count is 1
   //console.assert(placedWorkers[workerKey] === 2);
-  delete placedWorkers[workerKey];
 
-  resources.workers += 2;
+  resources.workers += placedWorkers[workerKey];
   // the resource was already refunded when the 2nd worker was placed
   //if (tile.type !== 'woods') {
   //  resources.wood++;
   //}
+
+  delete placedWorkers[workerKey];
 }
 
 function placeWorker(tile) {
