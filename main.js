@@ -26,7 +26,7 @@ let container;
 let endTurnButton;
 let workerCounter, woodCounter, timerCounter;
 
-let currentLevel = 2;
+let currentLevel = 0;
 const levelData = [
   {
     map: [
