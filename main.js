@@ -628,19 +628,24 @@ function processTileClick(tile) {
       removeWorker(tile);
       sounds.removeWorker.play();
     } else {
-      // TODO: move these checks into placeWorker to remove duplication
-      if (resources.workers === 0 || isGameOver) {
-        workerCounter.addClass('error');
-        sounds.error.play();
-        // TODO: global timeout var to debounce
-        setTimeout(function() {
-          workerCounter.removeClass('error');
-        }, 600);
-        return;
-      }
+      if (resources.workers === 0) {
+        removeWorker(tile);
+        sounds.removeWorker.play();
+      } else {
+        // TODO: move these checks into placeWorker to remove duplication
+        if (isGameOver) {
+          workerCounter.addClass('error');
+          sounds.error.play();
+          // TODO: global timeout var to debounce
+          setTimeout(function() {
+            workerCounter.removeClass('error');
+          }, 600);
+          return;
+        }
 
-      placeWorker(tile);
-      sounds.placeWorker.play();
+        placeWorker(tile);
+        sounds.placeWorker.play();
+      }
     }
   } else {
     // refuse if out of bounds or game is over
