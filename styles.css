@@ -4,6 +4,7 @@ body {
   color: white;
   font-family: 'Press Start 2P', monospace;
   transform-origin: 0 0;
+  image-rendering: pixelated; /* !!! */
 }
 
 #map-container {
@@ -62,6 +63,7 @@ body {
 
 .tile.blank {
   background-color: transparent;
+  border-color: #181818;
 }
 .tile.blank:hover {
   border-color: transparent;

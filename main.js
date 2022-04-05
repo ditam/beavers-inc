@@ -1,5 +1,5 @@
 
-const TILE_SIZE = 32; // tile size in px
+const TILE_SIZE = 32 + 2; // map tile size in px + border
 const COL_COUNT = 32;
 const ROW_COUNT = 16;
 const DAM_STRENGTH = 4;
@@ -802,7 +802,7 @@ function loadLevel(index, randomized) {
         width: TILE_SIZE,
         height: TILE_SIZE,
         // we can't just use cover or contain because of the hover border effect
-        'background-size': TILE_SIZE + 'px'
+        'background-size': TILE_SIZE - 2 + 'px' // should not include border
       });
       cellDiv.on('click', () => {
         processTileClick(cell);
