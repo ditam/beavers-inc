@@ -336,6 +336,36 @@ body {
   color: gray;
 }
 
+.tutorial-dialog {
+  position: absolute;
+  width: 80%;
+  left: 5%;
+  padding: 18px;
+  top: 5%;
+  height: 130px;
+  line-height: 18px;
+  background-color: black;
+  border: 8px solid white;
+}
+
+.tutorial-dialog .message {
+  padding-right: 128px;
+}
+
+.tutorial-dialog .message ~ .message {
+  margin-top: 20px;
+}
+
+.tutorial-dialog .icon {
+  position: absolute;
+  right: 15px;
+  bottom: 0px;
+  width: 128px;
+  height: 128px;
+  background-image: url(assets/beaver_boss.png);
+  background-size: cover;
+}
+
 /* /////////// Splash Screen //////////// */
 
 .play-button {

@@ -10,6 +10,8 @@ const CUT_WOOD_ANIM_DURATION = 500;
 let isFullscreen = false;
 let isGameOver = false;
 let currentScale = 1.0;
+let currentTutorialDialog;
+let tutorialProgress = 0;
 
 const sounds = {};
 
@@ -27,8 +29,61 @@ let container;
 let endTurnButton;
 let workerCounter, woodCounter, timerCounter;
 
-let currentLevel = 0;
+let currentLevel = 3;
 const levelData = [
+  {
+    map: [
+      [7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7],
+      [7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7],
+      [7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7],
+      [7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7],
+      [7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7],
+      [7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,0,0,0,0,0,0,0,0,4,4,4,4,4,1,7,7],
+      [7,7,7,7,7,7,7,7,7,7,7,7,7,7,0,0,0,0,0,4,4,0,4,4,1,1,1,1,1,1,4,7],
+      [7,7,7,7,7,7,7,7,7,7,7,7,7,0,0,4,4,4,4,4,4,4,1,3,6,1,1,4,4,4,7,7],
+      [7,7,7,7,7,7,7,7,7,7,7,7,0,0,4,1,1,1,1,4,1,1,1,4,1,1,4,4,0,0,7,7],
+      [7,7,7,7,7,7,7,7,7,7,7,0,0,4,1,1,4,4,1,1,1,4,4,4,4,4,0,0,7,7,7,7],
+      [7,7,7,7,7,7,7,7,7,7,0,0,4,1,1,4,0,0,4,1,4,4,4,4,4,4,7,7,7,7,7,7],
+      [7,7,7,7,7,7,7,7,7,7,4,4,1,1,4,0,0,0,4,1,1,1,4,4,4,4,4,4,7,7,7,7],
+      [7,7,7,7,7,7,7,7,7,4,1,1,1,4,0,0,0,0,0,4,4,1,1,1,4,0,0,0,4,7,7,7],
+      [7,7,7,7,7,7,7,7,4,1,1,4,4,0,0,7,7,7,0,0,0,4,4,1,0,0,4,0,4,4,7,7],
+      [7,7,7,7,7,7,7,7,7,1,4,7,7,7,7,7,7,7,7,7,0,0,0,4,4,4,4,0,0,0,7,7],
+      [7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,4,4,0,0,7]
+    ],
+    objectives: [
+      //{ x: 24, y: 7}
+    ],
+    resources: {
+      workers: 1,
+      wood: 10,
+      time: 7
+    },
+    tutorialMessages: [
+      {
+        header: 'Every turn, the river flows to open areas.',
+        body: (
+          'If nothing stands in its way, a river will eventually cover everything. ' +
+          'This one has damaged our dam to the north, and it keeps flowing into the canyon to the south. ' +
+          'Click on the dam to add a worker to repair it.'
+        )
+      }, {
+        header: 'As you know, every river flows left to right.',
+        body: (
+          'Our dam has created a pond of still water to its right. ' +
+          'A family of fish just had their first children spawn there. 800 kids! ' +
+          'I\'ll add an objective marker there. Make sure the dam stays up until they can make it out safe.'
+        ),
+        effect: function() {
+          endTurnButton.addClass('busy');
+          setTimeout(function() {
+            endTurnButton.removeClass('busy');
+            const tile = map[7][24];
+            addObjectiveToTile(tile);
+          }, 8000);
+        }
+      }
+    ]
+  },
   {
     map: [
       [7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7],
@@ -42,7 +97,7 @@ const levelData = [
       [1,1,4,1,1,1,4,4,1,1,4,4,4,0,0,0,0,4,4,4,4,4,4,4,4,4,4,4,4,1,1,1],
       [4,4,4,4,4,1,1,1,1,1,1,1,1,1,4,4,4,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4],
       [5,5,5,0,0,4,1,1,4,4,4,1,1,1,1,1,1,1,4,1,0,0,0,0,4,4,4,4,4,4,4,0],
-      [5,5,5,5,0,7,4,4,7,7,7,4,4,4,4,4,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
+      [5,5,5,5,0,7,4,4,7,7,7,4,4,4,4,4,1,1,1,3,1,0,0,0,0,0,0,0,0,0,0,0],
       [5,5,0,5,0,7,7,7,7,7,7,7,7,7,7,7,4,4,1,1,1,1,1,4,0,0,0,0,4,4,0,0],
       [7,7,0,0,7,7,7,7,7,7,7,7,7,7,7,7,7,7,4,4,4,4,1,1,4,0,4,0,0,4,4,0],
       [7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,4,1,1,1,4,0,0,0,0,0],
@@ -55,7 +110,23 @@ const levelData = [
       workers: 1,
       wood: 0,
       time: 7
-    }
+    },
+    tutorialMessages: [
+      {
+        header: 'Sometimes, a river is too wide to tame.',
+        body: (
+          'Did you just see our dam wash away? It was surrounded by water on all sides. ' +
+          'Our best bet is to dam the grass on the right before the water gets there. ' +
+          'A family of rabbits is burrowing there.'
+        )
+      }, {
+        header: 'Building dams costs wood.',
+        body: (
+          'Sometimes our field teams have to improvize and fell trees for lumber. ' +
+          'Did you see that delicious looking forest to the left?'
+        )
+      }
+    ]
   },
   {
     map: [
@@ -84,7 +155,16 @@ const levelData = [
       workers: 3,
       wood: 3,
       time: 9
-    }
+    },
+    tutorialMessages: [
+      {
+        header: 'Watch out for those swamplands to the north!',
+        body: (
+          'When water flows into a swamp tile, it will fill the entire swamp in the same turn. ' +
+          'This is typically in conflict with our corporate interests.'
+        )
+      }
+    ]
   },
   {
     map: [
@@ -114,7 +194,16 @@ const levelData = [
       workers: 2,
       wood: 10,
       time: 10
-    }
+    },
+    tutorialMessages: [
+      {
+        header: 'Our resources are limited, but we trust our workers to adapt.',
+        body: (
+          'If you find yourself short on workers, you can always send two of them to the same tile. ' +
+          'They will then ... erm, recruit a new member for the operation.'
+        )
+      }
+    ]
   }
 ];
 
@@ -176,6 +265,19 @@ function emptyPendingTransitionGroups() {
   }
 }
 emptyPendingTransitionGroups();
+
+function addObjectiveToTile(objectiveTile) {
+  console.assert(objectiveTile.type !== 'water', 'Invalid objective');
+  const objectiveNode = $('<div />').addClass('objective-marker');
+  objectiveNode.css({
+    width: TILE_SIZE,
+    height: TILE_SIZE,
+    top: objectiveTile.domNode.position().top / currentScale,
+    left: objectiveTile.domNode.position().left / currentScale
+  });
+  objectiveNode.appendTo(container);
+  objectiveTile.objectiveNode = objectiveNode;
+}
 
 // TODO: forEachTileInMap util?
 function updateTileCounters() {
@@ -279,6 +381,21 @@ function showMessage(text, css, options) {
   }
 }
 
+function showTutorialMessage(msg, msg2) {
+  const dialog = $('<div />').addClass('tutorial-dialog').appendTo(container);
+  $('<div />').addClass('message').text(msg).appendTo(dialog);
+  $('<div />').addClass('message').text(msg2).appendTo(dialog);
+  $('<div />').addClass('icon').appendTo(dialog);
+  currentTutorialDialog = dialog;
+}
+
+function removeTutorialMessage() {
+  if (currentTutorialDialog) {
+    currentTutorialDialog.remove();
+    currentTutorialDialog = undefined;
+  }
+}
+
 function floodTile(tile) {
   console.assert(tile.type !== 'water');
 
@@ -288,7 +405,7 @@ function floodTile(tile) {
     showMessage(
       'Game over!',
       {
-        left: '40%'
+        left: '30%'
       },
       {
         continueMsg: 'Click to retry level.',
@@ -535,6 +652,21 @@ function applyWorkerEffects() {
 }
 
 function endTurn() {
+  // clear tutorial messages
+  removeTutorialMessage();
+
+  // show tutorial message if applicable
+  if (levelData[currentLevel].tutorialMessages && levelData[currentLevel].tutorialMessages.length > tutorialProgress) {
+    const msg = levelData[currentLevel].tutorialMessages[tutorialProgress];
+    setTimeout(function() {
+      showTutorialMessage(msg.header, msg.body);
+      if (msg.effect) {
+        msg.effect();
+      }
+      tutorialProgress++;
+    }, 2000);
+  }
+
   endTurnButton.addClass('busy');
   applyWorkerEffects().then(function() {
     deferTransitions = true;
@@ -791,7 +923,7 @@ function loadLevel(index, randomized) {
           type: tileTypes[tileCode]
         };
         if (tile.type === 'dam') {
-          tile.typeBeforeDam = 'grass';
+          tile.typeBeforeDam = 'water';
           tile.strength = DAM_STRENGTH;
         }
         if (i < levelData[currentLevel].map.length && j < levelData[currentLevel].map[i].length) {
@@ -852,16 +984,7 @@ function loadLevel(index, randomized) {
   } else {
     for (const objective of levelData[currentLevel].objectives) {
       const objectiveTile = map[objective.y + dY][objective.x + dX];
-      console.assert(objectiveTile.type !== 'water', 'Invalid objective');
-      const objectiveNode = $('<div />').addClass('objective-marker');
-      objectiveNode.css({
-        width: TILE_SIZE,
-        height: TILE_SIZE,
-        top: objectiveTile.domNode.position().top / currentScale,
-        left: objectiveTile.domNode.position().left / currentScale
-      });
-      objectiveNode.appendTo(container);
-      objectiveTile.objectiveNode = objectiveNode;
+      addObjectiveToTile(objectiveTile);
     }
   }
 
@@ -890,6 +1013,17 @@ function loadLevel(index, randomized) {
 
   updateTileCounters();
   updateResources();
+  tutorialProgress = 0;
+
+  // show tutorial message
+  if (currentLevel === 0) {
+    showTutorialMessage(
+      'Welcome to Beavers Incorporated!',
+      'We mostly build beaver dams. ' +
+      'We also do leveraged buyouts and nuclear waste disposal, but that\'s above your pay grade for now. ' +
+      'Go ahead and press that End turn button below.'
+    );
+  }
 }
 
 function showPlayButton() {
@@ -947,6 +1081,9 @@ $(document).ready(function() {
   sounds.error = new Audio('assets/error.mp3');
 
   sounds.song1 = new Audio('assets/song1.mp3');
+  sounds.song1.addEventListener('ended', function() {
+    this.currentTime = 0;
+  }, false);
 
   container = $('#map-container');
   endTurnButton = $('#end-turn-button');
@@ -992,7 +1129,7 @@ $(document).ready(function() {
   $('body').on('keypress', function(e) {
     if (e.key === 'r') {
       // load random level
-      loadLevel(currentLevel, true);
+      loadLevel(3, true);
     }
   });
 
