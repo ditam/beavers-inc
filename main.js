@@ -532,7 +532,7 @@ function endTurn() {
 
     // check win conditions
     setTimeout(function() {
-      if (resources.time === 0) {
+      if (resources.time === 0 && !isGameOver) {
         sounds.success.play();
         if (levelData.length === currentLevel + 1) {
           showMessage(
