@@ -989,6 +989,13 @@ $(document).ready(function() {
     }
   });
 
+  $('body').on('keypress', function(e) {
+    if (e.key === 'r') {
+      // load random level
+      loadLevel(currentLevel, true);
+    }
+  });
+
   endTurnButton.on('click', () => {
     if (endTurnButton.hasClass('busy') || isGameOver) {
       return;
