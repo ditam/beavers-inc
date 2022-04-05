@@ -421,10 +421,12 @@ function removeWorker(tile) {
   //console.assert(placedWorkers[workerKey] === 2);
 
   resources.workers += placedWorkers[workerKey];
-  // the resource was already refunded when the 2nd worker was placed
-  //if (tile.type !== 'woods') {
-  //  resources.wood++;
-  //}
+  if (placedWorkers[workerKey] === 1 && tile.type !== 'woods') {
+    // if there's only 1 worker, we need to refund the wood
+    resources.wood++;
+  } else {
+    // for 2 workers, the resource was already refunded when the 2nd worker was placed
+  }
 
   delete placedWorkers[workerKey];
 }
