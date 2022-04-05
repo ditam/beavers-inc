@@ -98,7 +98,7 @@ const levelData = [
     resources: {
       workers: 5,
       wood: 10,
-      time: 10
+      time: 2
     }
   }
 ];
@@ -403,7 +403,8 @@ function removeWorker(tile) {
 
   const workerKey = tile.i + '|' + tile.j;
   console.assert(workerKey in placedWorkers);
-  console.assert(placedWorkers[workerKey] === 2);
+  //workers are removed during processing, in which case the count is 1
+  //console.assert(placedWorkers[workerKey] === 2);
   delete placedWorkers[workerKey];
 
   resources.workers += 2;
@@ -505,8 +506,6 @@ function applyWorkerEffects() {
 }
 
 function endTurn() {
-  console.log('ending turn...');
-
   endTurnButton.addClass('busy');
   applyWorkerEffects().then(function() {
     deferTransitions = true;
@@ -527,6 +526,14 @@ function endTurn() {
             {
               width: '60%',
               left: '150px'
+            },
+            {
+              continueMsg: 'Click to attempt a randomized scenario which might or might not be winnable.',
+              onContinue: function() {
+                $('.dialog').remove();
+                isGameOver = false;
+                loadLevel(currentLevel, true);
+              }
             }
           );
           isGameOver = true;
@@ -659,7 +666,7 @@ function processTileClick(tile) {
   updateResources();
 }
 
-function loadLevel(index) {
+function loadLevel(index, randomized) {
   // clean up any previous state and DOM
   map.length = 0;
   $('.tile').remove();
@@ -691,32 +698,74 @@ function loadLevel(index) {
   }
 
   // overide cells according to level data
-  for (let i=0; i<ROW_COUNT; i++) {
-    for (let j=0; j<COL_COUNT; j++) {
-      let tileCode;
-      if (levelData[currentLevel].map[i] && j < levelData[currentLevel].map[i].length) {
-        tileCode = levelData[currentLevel].map[i][j];
-      } else {
-        if (!_warnedAboutMapSize && !levelData[currentLevel].offsets) {
-          console.warn('Level map size does not match ROW and COL_COUNT', ROW_COUNT, COL_COUNT);
-          _warnedAboutMapSize = true;
+  if (randomized) {
+    console.log('generating randomized level...');
+    for (let i=0; i<ROW_COUNT; i++) {
+      for (let j=0; j<COL_COUNT; j++) {
+        const roll = Math.random();
+        let randomType;
+        if (roll < 0.02) {
+          randomType = 'water';
+        } else if (roll < 0.12) {
+          randomType = 'woods';
+        } else if (roll < 0.22) {
+          randomType = 'swamp';
+          if (i>0) {
+            map[i-1][j].type = 'swamp';
+          }
+          if (j>0) {
+            map[i][j-1].type = 'swamp';
+          }
+        } else if (roll < 0.42) {
+          randomType = 'highground';
+        } else {
+          randomType = 'grass';
         }
-        tileCode = 7; // 'blank'
+        const tile = {
+          i: i,
+          j: j,
+          type: randomType
+        };
+        map[i][j] = tile;
       }
-      const tile = {
-        i: i,
-        j: j,
-        type: tileTypes[tileCode]
-      };
-      if (tile.type === 'dam') {
-        tile.typeBeforeDam = 'grass';
-        tile.strength = DAM_STRENGTH;
+    }
+    // add a random diagonal river
+    const diagonalSum = Math.floor(Math.random() * (COL_COUNT+ROW_COUNT));
+    for (let i=0; i<ROW_COUNT; i++) {
+      for (let j=0; j<COL_COUNT; j++) {
+        if (i+j === diagonalSum || i+j === diagonalSum+1) {
+          map[i][j].type = 'water';
+        }
       }
-      if (i < levelData[currentLevel].map.length && j < levelData[currentLevel].map[i].length) {
-        // if we're within the specified partial map, apply offsets
-        map[i+dY][j+dX] = tile;
-      } else {
-        // otherwise don't bother updating the default map
+    }
+  } else {
+    for (let i=0; i<ROW_COUNT; i++) {
+      for (let j=0; j<COL_COUNT; j++) {
+        let tileCode;
+        if (levelData[currentLevel].map[i] && j < levelData[currentLevel].map[i].length) {
+          tileCode = levelData[currentLevel].map[i][j];
+        } else {
+          if (!_warnedAboutMapSize && !levelData[currentLevel].offsets) {
+            console.warn('Level map size does not match ROW and COL_COUNT', ROW_COUNT, COL_COUNT);
+            _warnedAboutMapSize = true;
+          }
+          tileCode = 7; // 'blank'
+        }
+        const tile = {
+          i: i,
+          j: j,
+          type: tileTypes[tileCode]
+        };
+        if (tile.type === 'dam') {
+          tile.typeBeforeDam = 'grass';
+          tile.strength = DAM_STRENGTH;
+        }
+        if (i < levelData[currentLevel].map.length && j < levelData[currentLevel].map[i].length) {
+          // if we're within the specified partial map, apply offsets
+          map[i+dY][j+dX] = tile;
+        } else {
+          // otherwise don't bother updating the default map
+        }
       }
     }
   }
@@ -746,18 +795,39 @@ function loadLevel(index) {
   }
 
   // generate objective markers
-  for (const objective of levelData[currentLevel].objectives) {
-    const objectiveTile = map[objective.y + dY][objective.x + dX];
-    console.assert(objectiveTile.type !== 'water', 'Invalid objective');
-    const objectiveNode = $('<div />').addClass('objective-marker');
-    objectiveNode.css({
-      width: TILE_SIZE,
-      height: TILE_SIZE,
-      top: objectiveTile.domNode.position().top,
-      left: objectiveTile.domNode.position().left
-    });
-    objectiveNode.appendTo(container);
-    objectiveTile.objectiveNode = objectiveNode;
+  if (randomized) {
+    const objectiveCount = Math.floor(Math.random() * 4) + 2;
+    for (let i=0;i<objectiveCount;i++) {
+      const rx = Math.floor(Math.random() * COL_COUNT);
+      const ry = Math.floor(Math.random() * ROW_COUNT);
+      const objectiveTile = map[ry][rx];
+      if (objectiveTile.type !== 'grass') {
+        setTileType(objectiveTile, 'grass');
+      }
+      const objectiveNode = $('<div />').addClass('objective-marker');
+      objectiveNode.css({
+        width: TILE_SIZE,
+        height: TILE_SIZE,
+        top: objectiveTile.domNode.position().top,
+        left: objectiveTile.domNode.position().left
+      });
+      objectiveNode.appendTo(container);
+      objectiveTile.objectiveNode = objectiveNode;
+    }
+  } else {
+    for (const objective of levelData[currentLevel].objectives) {
+      const objectiveTile = map[objective.y + dY][objective.x + dX];
+      console.assert(objectiveTile.type !== 'water', 'Invalid objective');
+      const objectiveNode = $('<div />').addClass('objective-marker');
+      objectiveNode.css({
+        width: TILE_SIZE,
+        height: TILE_SIZE,
+        top: objectiveTile.domNode.position().top,
+        left: objectiveTile.domNode.position().left
+      });
+      objectiveNode.appendTo(container);
+      objectiveTile.objectiveNode = objectiveNode;
+    }
   }
 
   // adjust layout according to the rendered map
@@ -773,9 +843,15 @@ function loadLevel(index) {
   });
 
   // apply level-specific resources
-  resources.workers = levelData[currentLevel].resources.workers;
-  resources.wood = levelData[currentLevel].resources.wood;
-  resources.time = levelData[currentLevel].resources.time;
+  if (randomized) {
+    resources.workers = Math.floor(Math.random()*5) + 3;
+    resources.wood = Math.floor(Math.random()*8) + 5;
+    resources.time = Math.floor(Math.random()*3) + 8;
+  } else {
+    resources.workers = levelData[currentLevel].resources.workers;
+    resources.wood = levelData[currentLevel].resources.wood;
+    resources.time = levelData[currentLevel].resources.time;
+  }
 
   updateTileCounters();
   updateResources();
