@@ -151,6 +151,10 @@ const DEBUG = {
   }
 };
 
+function noop() {
+  return;
+}
+
 // This var lists all the known tile types.
 // It is used both as a type checking aid,
 // as well as an index->type mapping for the level layouts,
@@ -199,6 +203,7 @@ function updateTileCounters() {
         } else {
           // it is redundant to display the timer here while we have the time resource
           // cell.counterNode.text(resources.time);
+          noop();
         }
       }
     }
@@ -426,6 +431,7 @@ function removeWorker(tile) {
     resources.wood++;
   } else {
     // for 2 workers, the resource was already refunded when the 2nd worker was placed
+    noop();
   }
 
   delete placedWorkers[workerKey];
@@ -477,7 +483,12 @@ function applyWorkerEffects() {
       } else {
         sounds.buildDam.play();
         resources.wood--;
-        tile.typeBeforeDam = tile.type;
+        if (tile.type === 'dam') {
+          // when rebuilding dams, we preserve the original original type
+          noop();
+        } else {
+          tile.typeBeforeDam = tile.type;
+        }
         if (tile.type !== 'dam') {
           // NB: we allow repairing dams, and in this case the type is already set
           setTileType(tile, 'dam');
@@ -787,6 +798,7 @@ function loadLevel(index, randomized) {
           map[i+dY][j+dX] = tile;
         } else {
           // otherwise don't bother updating the default map
+          noop();
         }
       }
     }
