@@ -9,6 +9,7 @@ const CUT_WOOD_ANIM_DURATION = 500;
 
 let isFullscreen = false;
 let isGameOver = false;
+let currentScale = 1.0;
 
 const sounds = {};
 
@@ -190,8 +191,8 @@ function updateTileCounters() {
           counter.appendTo(container);
           cell.counterNode = counter;
           cell.counterNode.css({
-            top: cell.domNode.position().top,
-            left: cell.domNode.position().left,
+            top: cell.domNode.position().top / currentScale,
+            left: cell.domNode.position().left / currentScale,
             width: TILE_SIZE,
             height: TILE_SIZE,
             'font-size': TILE_SIZE * 0.4 + 'px',
@@ -461,8 +462,8 @@ function placeWorker(tile) {
     tile.workerNode.css({
       width: TILE_SIZE,
       height: TILE_SIZE,
-      top: tile.domNode.position().top,
-      left: tile.domNode.position().left
+      top: tile.domNode.position().top / currentScale,
+      left: tile.domNode.position().left / currentScale
     });
     tile.workerNode.appendTo(container);
   };
@@ -842,8 +843,8 @@ function loadLevel(index, randomized) {
       objectiveNode.css({
         width: TILE_SIZE,
         height: TILE_SIZE,
-        top: objectiveTile.domNode.position().top,
-        left: objectiveTile.domNode.position().left
+        top: objectiveTile.domNode.position().top / currentScale,
+        left: objectiveTile.domNode.position().left / currentScale
       });
       objectiveNode.appendTo(container);
       objectiveTile.objectiveNode = objectiveNode;
@@ -856,8 +857,8 @@ function loadLevel(index, randomized) {
       objectiveNode.css({
         width: TILE_SIZE,
         height: TILE_SIZE,
-        top: objectiveTile.domNode.position().top,
-        left: objectiveTile.domNode.position().left
+        top: objectiveTile.domNode.position().top / currentScale,
+        left: objectiveTile.domNode.position().left / currentScale
       });
       objectiveNode.appendTo(container);
       objectiveTile.objectiveNode = objectiveNode;
@@ -931,11 +932,13 @@ $(document).ready(function() {
       const widthRatio = vw / mapWidth;
       const heightRatio = vh / mapHeight;
       const scale = Math.min(widthRatio, heightRatio);
+      currentScale = scale;
       $('body').css({
         transform: 'scale(' + scale + ')',
         overflow: 'hidden' // scrollbars mess with the calculation, and we mean to be fullscr anyway
       });
     } else {
+      currentScale = 1.0;
       $('body').css({
         transform: 'none',
         overflow: 'auto'
