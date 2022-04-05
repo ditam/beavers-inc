@@ -400,40 +400,60 @@ function removeWorker(tile) {
   delete tile.hasWorker;
   tile.workerNode.remove();
   delete tile.workerNode;
-  resources.workers++;
-  if (tile.type !== 'woods') {
-    resources.wood++;
-  }
 
   const workerKey = tile.i + '|' + tile.j;
   console.assert(workerKey in placedWorkers);
+  console.assert(placedWorkers[workerKey] === 2);
   delete placedWorkers[workerKey];
+
+  resources.workers += 2;
+  // the resource was already refunded when the 2nd worker was placed
+  //if (tile.type !== 'woods') {
+  //  resources.wood++;
+  //}
 }
 
 function placeWorker(tile) {
   const workerKey = tile.i + '|' + tile.j;
-  console.assert(!(workerKey in placedWorkers));
-  placedWorkers[workerKey] = true;
-
+  let workerCount = 1;
   resources.workers--;
-  if (tile.type !== 'woods') {
-    resources.wood--;
-  }
-  tile.hasWorker = true;
-  tile.workerNode = $('<div />').addClass('placed-worker');
-  tile.workerNode.css({
-    width: TILE_SIZE,
-    height: TILE_SIZE,
-    top: tile.domNode.position().top,
-    left: tile.domNode.position().left
-  });
-  tile.workerNode.appendTo(container);
+  if (workerKey in placedWorkers) {
+    console.assert(placedWorkers[workerKey] === 1);
+    workerCount = 2;
+    // we add a second worker
+    if (tile.type !== 'woods') {
+      // we return the wood the first worker was supposed to use
+      resources.wood++;
+    }
+    console.assert(tile.workerNode);
+    tile.workerNode.addClass('double');
+  } else {
+    // we add a single worker
+    if (tile.type !== 'woods') {
+      resources.wood--;
+    }
+    tile.hasWorker = true;
+    tile.workerNode = $('<div />').addClass('placed-worker');
+    tile.workerNode.css({
+      width: TILE_SIZE,
+      height: TILE_SIZE,
+      top: tile.domNode.position().top,
+      left: tile.domNode.position().left
+    });
+    tile.workerNode.appendTo(container);
+  };
+
+  placedWorkers[workerKey] = workerCount;
 }
 
 function applyWorkerEffects() {
   return new Promise((resolve, reject) => {
     function processWorker(tile, queue) {
-      if (tile.type === 'woods') {
+      const workerKey = tile.i + '|' + tile.j;
+      if (placedWorkers[workerKey] === 2) {
+        sounds.newWorker.play();
+        resources.workers++;
+      } else if (tile.type === 'woods') {
         sounds.cutWood.play();
         resources.wood++;
       } else {
@@ -579,8 +599,27 @@ function processTileClick(tile) {
   // ===== end DEBUG =====
 
   if (tile.hasWorker) {
-    removeWorker(tile);
-    sounds.removeWorker.play();
+    const workerKey = tile.i + '|' + tile.j;
+    const workerCount = placedWorkers[workerKey];
+
+    if (workerCount === 2) {
+      removeWorker(tile);
+      sounds.removeWorker.play();
+    } else {
+      // TODO: move these checks into placeWorker to remove duplication
+      if (resources.workers === 0 || isGameOver) {
+        workerCounter.addClass('error');
+        sounds.error.play();
+        // TODO: global timeout var to debounce
+        setTimeout(function() {
+          workerCounter.removeClass('error');
+        }, 600);
+        return;
+      }
+
+      placeWorker(tile);
+      sounds.placeWorker.play();
+    }
   } else {
     // refuse if out of bounds or game is over
     if (tile.type === 'blank' || isGameOver) {
@@ -750,6 +789,7 @@ $(document).ready(function() {
   sounds.cutWood = new Audio('assets/cut_wood.mp3');
   sounds.placeWorker = new Audio('assets/place_worker.mp3');
   sounds.removeWorker = new Audio('assets/remove_worker.mp3');
+  sounds.newWorker = new Audio('assets/new_worker.mp3');
   sounds.success = new Audio('assets/new_level.mp3');
   sounds.gameOver = new Audio('assets/game_over.mp3');
   sounds.error = new Audio('assets/error.mp3');

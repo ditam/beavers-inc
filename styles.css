@@ -196,6 +196,13 @@ body {
   pointer-events: none; /* allow tile underneath to be hovered and selected */
 }
 
+.placed-worker.double {
+  background-image: url('assets/beaver.png'), url('assets/worker-double.png');
+  background-size: auto;
+  background-repeat: no-repeat;
+  background-position-x: center, right;
+}
+
 /*
 /////////////////////  UI toolbar  /////////////////////
 */
