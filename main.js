@@ -12,6 +12,7 @@ let isGameOver = false;
 let currentScale = 1.0;
 let currentTutorialDialog;
 let tutorialProgress = 0;
+let showTutorial = true;
 
 const sounds = {};
 
@@ -201,7 +202,13 @@ const levelData = [
         body: (
           'If you find yourself short on workers, you can always send two of them to the same tile. ' +
           'They will then ... erm, recruit a new member for the operation.'
-        )
+        ),
+        effect: function() {
+          showTutorial = false;
+          setTimeout(function() {
+            removeTutorialMessage();
+          }, 20000);
+        }
       }
     ]
   }
@@ -382,11 +389,15 @@ function showMessage(text, css, options) {
 }
 
 function showTutorialMessage(msg, msg2) {
+  if (!showTutorial) {
+    return;
+  }
   const dialog = $('<div />').addClass('tutorial-dialog').appendTo(container);
   $('<div />').addClass('message').text(msg).appendTo(dialog);
   $('<div />').addClass('message').text(msg2).appendTo(dialog);
   $('<div />').addClass('icon').appendTo(dialog);
   currentTutorialDialog = dialog;
+  sounds.newMessage.play();
 }
 
 function removeTutorialMessage() {
@@ -1079,6 +1090,7 @@ $(document).ready(function() {
   sounds.success = new Audio('assets/new_level.mp3');
   sounds.gameOver = new Audio('assets/game_over.mp3');
   sounds.error = new Audio('assets/error.mp3');
+  sounds.newMessage = new Audio('assets/new_message.mp3');
 
   sounds.song1 = new Audio('assets/song1.mp3');
   sounds.song1.addEventListener('ended', function() {
