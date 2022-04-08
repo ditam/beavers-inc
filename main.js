@@ -1095,6 +1095,7 @@ $(document).ready(function() {
   sounds.song1 = new Audio('assets/song1.mp3');
   sounds.song1.addEventListener('ended', function() {
     this.currentTime = 0;
+    this.play();
   }, false);
 
   container = $('#map-container');
