@@ -398,6 +398,10 @@ function showTutorialMessage(msg, msg2) {
   $('<div />').addClass('icon').appendTo(dialog);
   currentTutorialDialog = dialog;
   sounds.newMessage.play();
+
+  dialog.on('click', function() {
+    dialog.remove();
+  });
 }
 
 function removeTutorialMessage() {

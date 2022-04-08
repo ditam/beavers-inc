@@ -346,6 +346,7 @@ body {
   line-height: 18px;
   background-color: black;
   border: 8px solid white;
+  cursor: pointer;
 }
 
 .tutorial-dialog .message {
