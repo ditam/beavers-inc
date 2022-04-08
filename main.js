@@ -310,6 +310,11 @@ function updateTileCounters() {
         }
         if (cell.type === 'dam') {
           cell.counterNode.text(cell.strength);
+          if (cell.strength <= countNeighboursOfType(cell, 'water')) {
+            cell.counterNode.addClass('failing');
+          } else {
+            cell.counterNode.removeClass('failing');
+          }
         } else {
           // it is redundant to display the timer here while we have the time resource
           // cell.counterNode.text(resources.time);
@@ -470,9 +475,6 @@ function floodNeighbours(i, j) {
     // dams on highground never break (not too useful though)
     if (tile.type === 'dam' && tile.typeBeforeDam !== 'highground') {
       tile.strength -= 1;
-      if (tile.strength <= countNeighboursOfType(tile, 'water')) {
-        tile.counterNode.addClass('failing');
-      }
       if (tile.strength === 0) {
         removeDam(tile);
       }
